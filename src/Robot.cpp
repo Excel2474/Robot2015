@@ -14,6 +14,8 @@ class Robot: public IterativeRobot
 	Solenoid elevatorExtend;
 	Solenoid elevatorRetract;
 	bool TBA;
+	bool clawExtended;
+	bool clawIsPressed;
 
 	LiveWindow *lw;
 
@@ -55,6 +57,29 @@ private:
 	void TeleopPeriodic()
 	{
 		myRobot.ArcadeDrive(drStick);
+
+#if Container Claw
+
+		if ((drStick.GetRawButton(4) == true) && (clawExtended == false) && (clawIsPressed == false))
+				{
+					clawOpen.Set(true);
+					clawClose.Set(false);
+					clawExtended = true;
+					clawIsPressed = true;
+				}
+
+		else if ((drStick.GetRawButton(4) == true) && (clawExtended == true) && (clawIsPressed == false))
+				{
+					clawOpen.Set(false);
+					clawClose.Set(true);
+					clawExtended = false;
+					clawIsPressed = true;
+				}
+		else if (drStick.GetRawButton(4) == false)
+				{
+					clawIsPressed = false;
+				}
+#endif
 	}
 
 	void TestPeriodic()
