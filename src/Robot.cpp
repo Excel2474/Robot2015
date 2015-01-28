@@ -17,7 +17,7 @@ private:
 
 	void AutonomousPeriodic()
 	{
-
+		bool isgitworking = true;
 	}
 
 	void TeleopInit()
