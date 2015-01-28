@@ -58,7 +58,7 @@ private:
 	{
 		myRobot.ArcadeDrive(drStick);
 
-#if Container Claw
+#if Container_Claw
 
 		if ((drStick.GetRawButton(4) == true) && (clawExtended == false) && (clawIsPressed == false))
 				{
