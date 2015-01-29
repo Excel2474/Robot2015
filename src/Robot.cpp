@@ -68,7 +68,25 @@ private:
 	void TeleopPeriodic()
 	{
 		myRobot.ArcadeDrive(drStick);
+#if initial_drive_code
+		if (drStick.GetRawAxis(1) > 0 || drStick.GetRawAxis(1) < 0)
+					{
+						rightWheels.SetSpeed(drStick.GetRawAxis(1));
+					}
+				else
+					{
+						rightWheels.SetSpeed(0.0);
+					}
 
+				if (drStick.GetRawAxis(5) > 0 || drStick.GetRawAxis(5) < 0)
+					{
+						leftWheels.SetSpeed(drStick.GetRawAxis(5));
+					}
+				else
+					{
+						leftWheels.SetSpeed(0.0);
+					}
+#endif
 #if Container_Claw
 
 		if ((drStick.GetRawButton(4) == true) && (clawExtended == false) && (clawIsPressed == false))
