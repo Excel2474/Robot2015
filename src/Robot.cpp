@@ -17,7 +17,7 @@ class Robot: public IterativeRobot
 	bool clawExtended;
 	bool clawIsPressed;
 
-	LiveWindow *lw;
+	LiveWindow *lw = LiveWindow::GetInstance();
 
 public:
 	Robot() :
@@ -26,8 +26,19 @@ public:
 		drStick(TBA),
 		rightWheels(TBA),
 		leftWheels(TBA),
+		clawOpen(TBA),
+		clawClose(TBA),
+		shiftUp(TBA),
+		shiftDown(TBA),
+		elevatorExtend(TBA),
+		elevatorRetract(TBA),
 		lw(NULL)
 {
+//		//Potential SmartDashBoard component inclusion code- START
+//		Solenoid *elevatorExtend = elevatorExtend;
+//		lw->AddActuator("Solenoid", 2, elevatorExtend);
+//		//SmartDashboard thing END
+
 		myRobot.SetExpiration(0.1);
 }
 
