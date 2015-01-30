@@ -7,15 +7,14 @@ class Robot: public IterativeRobot
 	Joystick drStick;
 	Talon rightWheels;
 	Talon leftWheels;
-	Solenoid clawOpen;
-	Solenoid clawClose;
-	Solenoid shiftUp;
-	Solenoid shiftDown;
+	Solenoid clawRight;
+	Solenoid clawLeft;
+	Solenoid shiftGear;
 	Solenoid elevatorExtend;
 	Solenoid elevatorRetract;
 	bool TBA;
-	bool clawExtended;
-	bool clawIsPressed;
+	bool clawOpen = true;
+	bool clawIsPressed = false;
 
 	LiveWindow *lw = LiveWindow::GetInstance();
 
@@ -26,10 +25,9 @@ public:
 		drStick(TBA),
 		rightWheels(TBA),
 		leftWheels(TBA),
-		clawOpen(TBA),
-		clawClose(TBA),
-		shiftUp(TBA),
-		shiftDown(TBA),
+		clawRight(TBA),
+		clawLeft(TBA),
+		shiftGear(TBA),
 		elevatorExtend(TBA),
 		elevatorRetract(TBA),
 		lw(NULL)
@@ -68,53 +66,73 @@ private:
 	void TeleopPeriodic()
 	{
 		myRobot.ArcadeDrive(drStick);
-#if initial_drive_code
-		if (drStick.GetRawAxis(1) > 0 || drStick.GetRawAxis(1) < 0)
-					{
-						rightWheels.SetSpeed(drStick.GetRawAxis(1));
-					}
-				else
-					{
-						rightWheels.SetSpeed(0.0);
-					}
 
-				if (drStick.GetRawAxis(5) > 0 || drStick.GetRawAxis(5) < 0)
-					{
-						leftWheels.SetSpeed(drStick.GetRawAxis(5));
-					}
-				else
-					{
-						leftWheels.SetSpeed(0.0);
-					}
-#endif
-#if Container_Claw
-
-		if ((drStick.GetRawButton(4) == true) && (clawExtended == false) && (clawIsPressed == false))
-				{
-					clawOpen.Set(true);
-					clawClose.Set(false);
-					clawExtended = true;
-					clawIsPressed = true;
-				}
-
-		else if ((drStick.GetRawButton(4) == true) && (clawExtended == true) && (clawIsPressed == false))
-				{
-					clawOpen.Set(false);
-					clawClose.Set(true);
-					clawExtended = false;
-					clawIsPressed = true;
-				}
-		else if (drStick.GetRawButton(4) == false)
-				{
-					clawIsPressed = false;
-				}
-#endif
 	}
 
 	void TestPeriodic()
 	{
 		lw->Run();
 	}
+
+#if Container_Claw
+	void ToggleClaw() {
+		if ((drStick.GetRawButton(4) == true) && (clawOpen == true) && (clawIsPressed == false))
+				{
+					clawRight.Set(false);
+					clawLeft.Set(false);
+					clawOpen = false;
+					clawIsPressed = true;
+				}
+
+		else if ((drStick.GetRawButton(4) == true) && (clawOpen == false) && (clawIsPressed == false))
+				{
+					clawRight.Set(true);
+					clawLeft.Set(true);
+					clawOpen = true;
+					clawIsPressed = true;
+				}
+		else if (drStick.GetRawButton(4) == false)
+				{
+					clawIsPressed = false;
+				}
+	}
+#endif
+
+	void CheesyDrive() {
+		if (drStick.GetRawAxis(1) > 0 || drStick.GetRawAxis(1) < 0)
+			{
+				rightWheels.SetSpeed(drStick.GetRawAxis(1));
+				leftWheels.SetSpeed(drStick.GetRawAxis(1));
+			}
+		else
+			{
+				rightWheels.SetSpeed(0.0);
+				leftWheels.SetSpeed(0.0);
+			}
+
+		if (drStick.GetRawAxis(4) > 0)
+			{
+				rightWheels.SetSpeed(2*drStick.GetRawAxis(1));
+				leftWheels.SetSpeed(.5*drStick.GetRawAxis(1)) ;
+			}
+		else if (drStick.GetRawAxis(4) < 0)
+			{
+				rightWheels.SetSpeed(0.5*drStick.GetRawAxis(1));
+				leftWheels.SetSpeed(2*drStick.GetRawAxis(1));
+			}
+	}
+
+	void GearShift() {
+		if (drStick.GetRawButton(5) == true)
+		{
+			shiftGear.Set(true);
+		}
+		else
+		{
+			shiftGear.Set(false);
+		}
+	}
+
 };
 
 START_ROBOT_CLASS(Robot);
