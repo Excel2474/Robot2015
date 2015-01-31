@@ -1,48 +1,50 @@
 #include "WPILib.h"
 
+typedef enum
+{
+	AUTONOMOUS_ONE,
+	AUTONOMOUS_TWO,
+	AUTONOMOUS_THREE,
+	AUTONOMOUS_FOUR
+}AUTONOMOUS_OPTIONS;
+
+AUTONOMOUS_OPTIONS autonOptions;
+
+
 class Robot: public IterativeRobot
 {
-	RobotDrive myRobot;
-	Joystick opStick;
-	Joystick drStick;
-	Talon rightWheels;
-	Talon leftWheels;
-	Solenoid clawRight;
-	Solenoid clawLeft;
-	Solenoid shiftGear;
-	Solenoid elevatorExtend;
-	Solenoid elevatorRetract;
-	bool TBA;
-	bool clawOpen = true;
-	bool clawIsPressed = false;
 
-	LiveWindow *lw = LiveWindow::GetInstance();
+	RobotDrive myRobot; // robot drive system
+	Joystick stick; // only joystick
+
+	LiveWindow *lw;
+	Talon joeTalon;
+	Talon kaylaTalon;
+	Solenoid numanumamaticExtend;
+	Solenoid numanumamaticRetract;
+	//DigitalInput clicker = new DigitalInput(0);
+	int autoLoopCounter;
+	float lastCurve;
+	bool curvyWurvy = false;
+	bool extended = false;
+	bool numanumamaticIsPressed = false;
 
 public:
 	Robot() :
-		myRobot(0,1),
-		opStick(TBA),
-		drStick(TBA),
-		rightWheels(TBA),
-		leftWheels(TBA),
-		clawRight(TBA),
-		clawLeft(TBA),
-		shiftGear(TBA),
-		elevatorExtend(TBA),
-		elevatorRetract(TBA),
-		lw(NULL)
-{
-//		//Potential SmartDashBoard component inclusion code- START
-//		Solenoid *elevatorExtend = elevatorExtend;
-//		lw->AddActuator("Solenoid", 2, elevatorExtend);
-//		//SmartDashboard thing END
-
+		myRobot(joeTalon, kaylaTalon),	// these must be initialized in the same order
+		stick(0),// as they are declared above.
+		lw(NULL),
+		joeTalon(7),
+		kaylaTalon(6),
+		numanumamaticExtend(0),
+		numanumamaticRetract(1),
+		//clicker(0),
+		autoLoopCounter(0)
+	{
 		myRobot.SetExpiration(0.1);
-}
+	}
 
 private:
-
-
 	void RobotInit()
 	{
 		lw = LiveWindow::GetInstance();
@@ -50,23 +52,116 @@ private:
 
 	void AutonomousInit()
 	{
-
+		autoLoopCounter = 0;
 	}
 
 	void AutonomousPeriodic()
 	{
+		switch (autonOptions)
+		{
+		case AUTONOMOUS_ONE:
+			AutonOne();
+			break;
+		case AUTONOMOUS_TWO:
+			AutonTwo();
+			break;
+		case AUTONOMOUS_THREE:
+			AutonThree();
+			break;
+		case AUTONOMOUS_FOUR:
+			AutonFour();
+			break;
+		}
 
+
+
+//		if(autoLoopCounter < 200) //Check if we've completed 100 loops (approximately 2 seconds)
+//		{
+//			if(autoLoopCounter < 50)
+//			{
+//				myRobot.Drive(-0.5, 0.0); 	// drive forwards half speed
+//			}
+//			else if(autoLoopCounter >= 50 && autoLoopCounter <= 100)
+//			{
+//				myRobot.Drive(0.25, -0.5);
+//				if(autoLoopCounter == 75)
+//				{
+//					numanumamaticExtend.Set(true);
+//				}
+//			}
+//			else
+//			{
+//				myRobot.Drive(0.5, 0.0);
+//			}
+//
+//
+//			autoLoopCounter++;
+//		}
+//		else
+//		{
+//			myRobot.Drive(0.0, 0.0); 	// stop robot
+//		}
 	}
 
 	void TeleopInit()
+	{
+		lastCurve = 1;
+	}
+
+	void TeleopDisabled()
 	{
 
 	}
 
 	void TeleopPeriodic()
 	{
-		myRobot.ArcadeDrive(drStick);
+		myRobot.ArcadeDrive(stick); // drive with arcade style (use right stick)
+		if ((stick.GetRawAxis(1) < 0.1) && (stick.GetRawAxis(1) > -0.1))
+		{
+			joeTalon.SetSpeed(stick.GetRawAxis(4));
+			kaylaTalon.SetSpeed(-stick.GetRawAxis(4));
+		}
+		else
+		{
+			myRobot.Drive(stick.GetRawAxis(1), lastCurve);
+		}
 
+
+		if ((stick.GetRawAxis(4) - lastCurve) < -0.1 || (stick.GetRawAxis(4) - lastCurve) > 0.1)
+		{
+			lastCurve = stick.GetRawAxis(4);
+		}
+
+
+		if ((stick.GetRawButton(4) == true) && (extended == false) && (numanumamaticIsPressed == false))
+		{
+			numanumamaticExtend.Set(true);
+			numanumamaticRetract.Set(false);
+			extended = true;
+			numanumamaticIsPressed = true;
+		}
+		else if ((stick.GetRawButton(4) == true) && (extended == true) && (numanumamaticIsPressed == false))
+		{
+			numanumamaticExtend.Set(false);
+			numanumamaticRetract.Set(true);
+			extended = false;
+			numanumamaticIsPressed = true;
+		}
+		else if (stick.GetRawButton(4) == false)
+		{
+			numanumamaticIsPressed = false;
+		}
+
+
+
+		//if (clicker.Get() == true)
+		//	{
+		//		joeTalon.SetSpeed(1.0);
+		//	}
+		//else
+		//	{
+		//		joeTalon.SetSpeed(0.0);
+		//	}
 	}
 
 	void TestPeriodic()
@@ -74,66 +169,25 @@ private:
 		lw->Run();
 	}
 
-#if Container_Claw
-	void ToggleClaw() {
-		if ((drStick.GetRawButton(4) == true) && (clawOpen == true) && (clawIsPressed == false))
-				{
-					clawRight.Set(false);
-					clawLeft.Set(false);
-					clawOpen = false;
-					clawIsPressed = true;
-				}
+	void AutonOne(void)
+	{
 
-		else if ((drStick.GetRawButton(4) == true) && (clawOpen == false) && (clawIsPressed == false))
-				{
-					clawRight.Set(true);
-					clawLeft.Set(true);
-					clawOpen = true;
-					clawIsPressed = true;
-				}
-		else if (drStick.GetRawButton(4) == false)
-				{
-					clawIsPressed = false;
-				}
-	}
-#endif
-
-	void CheesyDrive() {
-		if (drStick.GetRawAxis(1) > 0 || drStick.GetRawAxis(1) < 0)
-			{
-				rightWheels.SetSpeed(drStick.GetRawAxis(1));
-				leftWheels.SetSpeed(drStick.GetRawAxis(1));
-			}
-		else
-			{
-				rightWheels.SetSpeed(0.0);
-				leftWheels.SetSpeed(0.0);
-			}
-
-		if (drStick.GetRawAxis(4) > 0)
-			{
-				rightWheels.SetSpeed(2*drStick.GetRawAxis(1));
-				leftWheels.SetSpeed(.5*drStick.GetRawAxis(1)) ;
-			}
-		else if (drStick.GetRawAxis(4) < 0)
-			{
-				rightWheels.SetSpeed(0.5*drStick.GetRawAxis(1));
-				leftWheels.SetSpeed(2*drStick.GetRawAxis(1));
-			}
 	}
 
-	void GearShift() {
-		if (drStick.GetRawButton(5) == true)
-		{
-			shiftGear.Set(true);
-		}
-		else
-		{
-			shiftGear.Set(false);
-		}
+	void AutonTwo(void)
+	{
+
 	}
 
+	void AutonThree(void)
+	{
+
+	}
+
+	void AutonFour(void)
+	{
+
+	}
 };
 
 START_ROBOT_CLASS(Robot);
-
