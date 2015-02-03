@@ -16,12 +16,16 @@ class Robot: public IterativeRobot
 
 	RobotDrive myRobot; // robot drive system
 	Joystick stick; // only joystick
+	SmartDashboard driverDashboard;
 
 	LiveWindow *lw;
 	Talon joeTalon;
 	Talon kaylaTalon;
+	Talon loretta;
+	Talon rhonda;
 	Solenoid numanumamaticExtend;
 	Solenoid numanumamaticRetract;
+	Encoder rightEncoder;
 	//DigitalInput clicker = new DigitalInput(0);
 	int autoLoopCounter;
 	float lastCurve;
@@ -36,8 +40,11 @@ public:
 		lw(NULL),
 		joeTalon(7),
 		kaylaTalon(6),
+		loretta(9),
+		rhonda(8),
 		numanumamaticExtend(0),
 		numanumamaticRetract(1),
+		rightEncoder(0, 1, true),
 		//clicker(0),
 		autoLoopCounter(0)
 	{
@@ -110,12 +117,16 @@ private:
 
 	void TeleopDisabled()
 	{
-
+		driverDashboard.PutBoolean("Extended", extended);
 	}
 
 	void TeleopPeriodic()
 	{
+		double rightEncoderRate = rightEncoder.GetRate();
+		double rightRPM = (rightEncoderRate/256) * 60;
 		myRobot.ArcadeDrive(stick); // drive with arcade style (use right stick)
+
+		//Drive
 		if ((stick.GetRawAxis(1) < 0.1) && (stick.GetRawAxis(1) > -0.1))
 		{
 			joeTalon.SetSpeed(stick.GetRawAxis(4));
@@ -132,7 +143,7 @@ private:
 			lastCurve = stick.GetRawAxis(4);
 		}
 
-
+		//Solenoid Test
 		if ((stick.GetRawButton(4) == true) && (extended == false) && (numanumamaticIsPressed == false))
 		{
 			numanumamaticExtend.Set(true);
@@ -151,6 +162,8 @@ private:
 		{
 			numanumamaticIsPressed = false;
 		}
+
+		if ()
 
 
 
