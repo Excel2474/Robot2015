@@ -16,7 +16,7 @@ class Robot: public IterativeRobot
 
 	RobotDrive myRobot; // robot drive system
 	Joystick stick; // only joystick
-	SmartDashboard driverDashboard;
+//	SmartDashboard driverDashboard;
 
 	LiveWindow *lw;
 	Talon joeTalon;
@@ -25,17 +25,17 @@ class Robot: public IterativeRobot
 	Talon rhonda;
 	Solenoid numanumamaticExtend;
 	Solenoid numanumamaticRetract;
-	Encoder rightEncoder;
-	//DigitalInput clicker = new DigitalInput(0);
-	int autoLoopCounter;
-	float lastCurve;
+	//Encoder rightEncoder;
+	DigitalInput clicker;
+	int autoLoopCounter = 0;
+	float lastCurve = 0;
 	bool curvyWurvy = false;
 	bool extended = false;
 	bool numanumamaticIsPressed = false;
 
 public:
 	Robot() :
-		myRobot(joeTalon, kaylaTalon),	// these must be initialized in the same order
+		myRobot(loretta, rhonda, joeTalon, kaylaTalon),	// these must be initialized in the same order
 		stick(0),// as they are declared above.
 		lw(NULL),
 		joeTalon(7),
@@ -44,9 +44,10 @@ public:
 		rhonda(8),
 		numanumamaticExtend(0),
 		numanumamaticRetract(1),
-		rightEncoder(0, 1, true),
-		//clicker(0),
-		autoLoopCounter(0)
+		//rightEncoder(0, 1, true)
+		clicker(0)
+		//autoLoopCounter(0),
+		//lastCurve(0)
 	{
 		myRobot.SetExpiration(0.1);
 	}
@@ -117,13 +118,13 @@ private:
 
 	void TeleopDisabled()
 	{
-		driverDashboard.PutBoolean("Extended", extended);
+		//driverDashboard.PutBoolean("Extended", extended);
 	}
 
 	void TeleopPeriodic()
 	{
-		double rightEncoderRate = rightEncoder.GetRate();
-		double rightRPM = (rightEncoderRate/256) * 60;
+		//double rightEncoderRate = rightEncoder.GetRate();
+		//double rightRPM = (rightEncoderRate/256) * 60;
 		myRobot.ArcadeDrive(stick); // drive with arcade style (use right stick)
 
 		//Drive
@@ -143,38 +144,52 @@ private:
 			lastCurve = stick.GetRawAxis(4);
 		}
 
-		//Solenoid Test
-		if ((stick.GetRawButton(4) == true) && (extended == false) && (numanumamaticIsPressed == false))
+		//Gear Box Motors
+		if(stick.GetRawButton(3) == true)
 		{
+			myRobot.Drive(.1, 0);
+		}
+
+		//Solenoid Test
+//		if ((stick.GetRawButton(4) == true) && (extended == false) && (numanumamaticIsPressed == false))
+//		{
+//			numanumamaticExtend.Set(true);
+//			numanumamaticRetract.Set(false);
+//			extended = true;
+//			numanumamaticIsPressed = true;
+//		}
+//		else if ((stick.GetRawButton(4) == true) && (extended == true) && (numanumamaticIsPressed == false))
+//		{
+//			numanumamaticExtend.Set(false);
+//			numanumamaticRetract.Set(true);
+//			extended = false;
+//			numanumamaticIsPressed = true;
+//		}
+//		else if (stick.GetRawButton(4) == false)
+//		{
+//			numanumamaticIsPressed = false;
+//		}
+
+
+		if ((clicker.Get() == true) && (extended == false) && (numanumamaticIsPressed == false))
+			{
 			numanumamaticExtend.Set(true);
 			numanumamaticRetract.Set(false);
 			extended = true;
 			numanumamaticIsPressed = true;
-		}
-		else if ((stick.GetRawButton(4) == true) && (extended == true) && (numanumamaticIsPressed == false))
-		{
+			}
+		else if ((clicker.Get() == true) && (extended == true) && (numanumamaticIsPressed == false))
+			{
 			numanumamaticExtend.Set(false);
 			numanumamaticRetract.Set(true);
 			extended = false;
 			numanumamaticIsPressed = true;
-		}
-		else if (stick.GetRawButton(4) == false)
-		{
-			numanumamaticIsPressed = false;
-		}
 
-		if ()
-
-
-
-		//if (clicker.Get() == true)
-		//	{
-		//		joeTalon.SetSpeed(1.0);
-		//	}
-		//else
-		//	{
-		//		joeTalon.SetSpeed(0.0);
-		//	}
+			}
+		else if (clicker.Get() == false)
+			{
+				numanumamaticIsPressed = false;
+			}
 	}
 
 	void TestPeriodic()
