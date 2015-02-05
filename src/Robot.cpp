@@ -31,6 +31,13 @@ class Robot: public IterativeRobot
 	float lastCurve = 0;
 	bool curvyWurvy = false;
 	bool extended = false;
+	bool clawOpen = false;
+	bool elevatorExtended = false;
+	bool dropRoutineStarted = false;
+	bool dropRoutineFinished = true;
+	int elevatorLevel = 1;
+	bool yReleased;
+	bool rollersOpen = true;
 	bool numanumamaticIsPressed = false;
 
 public:
@@ -150,6 +157,67 @@ private:
 			myRobot.Drive(.1, 0);
 		}
 
+		//Open Claw
+		if (stick.GetPOV(0) == true && clawOpen == false)
+		{
+			clawOpen = true;
+		}
+
+		//Close Claw
+		if (stick.GetPOV(4) == true && clawOpen == true)
+		{
+			clawOpen = false;
+		}
+
+		//Extend Elevator
+		if (stick.GetPOV(2) == true && elevatorExtended == false)
+		{
+			elevatorExtended = true;
+		}
+
+		//Retract Elevator
+		if (stick.GetPOV(6) == true && elevatorExtended == true)
+		{
+			elevatorExtended = false;
+		}
+
+		//Drop Routine Start
+		if (stick.GetRawButton(3) == true && dropRoutineStarted == false && dropRoutineFinished == true)
+		{
+			dropRoutineStarted = true;
+			dropRoutineFinished = false;
+			//Call drop routine
+		}
+
+		//Lower Elevator
+		if (stick.GetRawButton(1) == true && elevatorLevel != 0)
+		{
+			elevatorLevel = elevatorLevel - 1;
+			//Call lower elevator function
+		}
+
+		//Raise Elevator
+		if (stick.GetRawButton(2) == true && elevatorLevel != 6)
+		{
+			elevatorLevel = elevatorLevel + 1;
+			//Call raise elevator function
+		}
+
+		// Open Claw and rollers
+		if (stick.GetRawButton(4) && yReleased == true)
+		{
+			if (stick.GetRawButton(5) == true && rollersOpen == false)
+			{
+				rollersOpen = true;
+				//override left bumper
+			}
+
+			// call ignore our POV 4 when called
+
+			clawOpen = true;
+			// Call Open claw and rollers wide
+		}
+
 		//Solenoid Test
 //		if ((stick.GetRawButton(4) == true) && (extended == false) && (numanumamaticIsPressed == false))
 //		{
@@ -171,25 +239,26 @@ private:
 //		}
 
 
-		if ((clicker.Get() == true) && (extended == false) && (numanumamaticIsPressed == false))
-			{
-			numanumamaticExtend.Set(true);
-			numanumamaticRetract.Set(false);
-			extended = true;
-			numanumamaticIsPressed = true;
-			}
-		else if ((clicker.Get() == true) && (extended == true) && (numanumamaticIsPressed == false))
-			{
-			numanumamaticExtend.Set(false);
-			numanumamaticRetract.Set(true);
-			extended = false;
-			numanumamaticIsPressed = true;
-
-			}
-		else if (clicker.Get() == false)
-			{
-				numanumamaticIsPressed = false;
-			}
+// Claw Code
+//		if ((clicker.Get() == true) && (extended == false) && (numanumamaticIsPressed == false))
+//			{
+//			numanumamaticExtend.Set(true);
+//			numanumamaticRetract.Set(false);
+//			extended = true;
+//			numanumamaticIsPressed = true;
+//			}
+//		else if ((clicker.Get() == true) && (extended == true) && (numanumamaticIsPressed == false))
+//			{
+//			numanumamaticExtend.Set(false);
+//			numanumamaticRetract.Set(true);
+//			extended = false;
+//			numanumamaticIsPressed = true;
+//
+//			}
+//		else if (clicker.Get() == false)
+//			{
+//				numanumamaticIsPressed = false;
+//			}
 	}
 
 	void TestPeriodic()
