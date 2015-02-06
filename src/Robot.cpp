@@ -1,4 +1,5 @@
 #include "WPILib.h"
+#include "Claw.h"
 
 typedef enum
 {
@@ -8,6 +9,15 @@ typedef enum
 	AUTONOMOUS_FOUR
 }AUTONOMOUS_OPTIONS;
 
+typedef enum
+{
+	SOLENOID_RIGHT_CLAW_EXTEND,
+	SOLENOID_RIGHT_CLAW_RETRACT,
+	SOLENOID_LEFT_CLAW_EXTEND,
+	SOLENOID_LEFT_CLAW_RETRACT
+
+
+}SOLENOID_CHANNEL;
 AUTONOMOUS_OPTIONS autonOptions;
 
 
@@ -23,8 +33,14 @@ class Robot: public IterativeRobot
 	Talon kaylaTalon;
 	Talon loretta;
 	Talon rhonda;
-	Solenoid numanumamaticExtend;
-	Solenoid numanumamaticRetract;
+	Talon thing1;
+	Talon thing2;
+//	Solenoid numanumamaticExtend;
+//	Solenoid numanumamaticRetract;
+	Solenoid shiftUpRightExtend;
+	Solenoid shiftUpRightRetract;
+	Solenoid shiftUpLeftExtend;
+	Solenoid shiftUpLeftRetract;
 	//Encoder rightEncoder;
 	DigitalInput clicker;
 	int autoLoopCounter = 0;
@@ -39,6 +55,8 @@ class Robot: public IterativeRobot
 	bool yReleased;
 	bool rollersOpen = true;
 	bool numanumamaticIsPressed = false;
+	bool shiftUp = false;
+	Claw claws;
 
 public:
 	Robot() :
@@ -49,10 +67,17 @@ public:
 		kaylaTalon(6),
 		loretta(9),
 		rhonda(8),
-		numanumamaticExtend(0),
-		numanumamaticRetract(1),
+		thing1(5),
+		thing2(4),
+//		numanumamaticExtend(0),
+//		numanumamaticRetract(1),
+		shiftUpRightExtend(3),
+		shiftUpRightRetract(5),
+		shiftUpLeftExtend(4),
+		shiftUpLeftRetract(6),
 		//rightEncoder(0, 1, true)
-		clicker(0)
+		clicker(0),
+		claws(SOLENOID_RIGHT_CLAW_EXTEND, SOLENOID_RIGHT_CLAW_RETRACT, SOLENOID_LEFT_CLAW_EXTEND, SOLENOID_LEFT_CLAW_RETRACT)
 		//autoLoopCounter(0),
 		//lastCurve(0)
 	{
@@ -158,15 +183,18 @@ private:
 		}
 
 		//Open Claw
-		if (stick.GetPOV(0) == true && clawOpen == false)
+		if (stick.GetPOV(90) == true && clawOpen == false)
 		{
+
 			clawOpen = true;
+			claws.OpenClaw();
 		}
 
 		//Close Claw
-		if (stick.GetPOV(4) == true && clawOpen == true)
+		if (stick.GetPOV(180) == true && clawOpen == true)
 		{
 			clawOpen = false;
+			claws.CloseClaw();
 		}
 
 		//Extend Elevator
@@ -217,6 +245,62 @@ private:
 			clawOpen = true;
 			// Call Open claw and rollers wide
 		}
+
+		//Close Rollers
+		if (stick.GetRawButton(5) == true && rollersOpen == true)
+		{
+			rollersOpen = false;
+			//Call close rollers function
+		}
+
+		//Open Rollers
+		else if (stick.GetRawButton(5) == false && rollersOpen == false)
+		{
+			rollersOpen = true;
+			//Call open rollers function
+		}
+
+		//Shift Up Gear
+		if (stick.GetRawButton(6) == true && shiftUp == false)
+		{
+			shiftUp = true;
+			shiftUpRightExtend.Set(true);
+			shiftUpLeftExtend.Set(true);
+			shiftUpRightRetract.Set(false);
+			shiftUpLeftRetract.Set(false);
+		}
+
+		//Shift Down Gear
+		else if (stick.GetRawButton(6) == false && shiftUp == true)
+		{
+			shiftUp = false;
+			shiftUpRightExtend.Set(false);
+			shiftUpLeftExtend.Set(false);
+			shiftUpRightRetract.Set(true);
+			shiftUpLeftRetract.Set(true);
+		}
+
+		//Spin Rollers In
+		if (stick.GetRawAxis(2) >= 0.05)
+		{
+			thing1.SetSpeed(stick.GetRawAxis(2));
+			thing2.SetSpeed(-stick.GetRawAxis(2));
+		}
+
+		//Spin Rollers Out
+		else if (stick.GetRawAxis(3) >= 0.05)
+		{
+			thing1.SetSpeed(-stick.GetRawAxis(2));
+			thing2.SetSpeed(stick.GetRawAxis(3));
+		}
+
+		//Stop Rollers
+		else
+		{
+			thing2.SetSpeed(0.0);
+			thing1.SetSpeed(0.0);
+		}
+
 
 		//Solenoid Test
 //		if ((stick.GetRawButton(4) == true) && (extended == false) && (numanumamaticIsPressed == false))
