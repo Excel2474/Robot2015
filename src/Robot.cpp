@@ -183,7 +183,7 @@ private:
 		}
 
 		//Open Claw
-		if (stick.GetPOV(90) == true && clawOpen == false)
+		if (stick.GetPOV(0) == 0 && clawOpen == false)
 		{
 
 			clawOpen = true;
@@ -191,7 +191,7 @@ private:
 		}
 
 		//Close Claw
-		if (stick.GetPOV(180) == true && clawOpen == true)
+		if (stick.GetPOV(0) == 180 && clawOpen == true)
 		{
 			clawOpen = false;
 			claws.CloseClaw();
