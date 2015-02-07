@@ -1,5 +1,24 @@
 #include "WPILib.h"
 #include "Claw.h"
+#include "Elevator.h"
+#include "Rollers.h"
+
+typedef enum
+{
+	ELEVATOR_ENCODER_A,
+	ELEVATOR_ENCODER_B,
+	RIGHT_ENCODER,
+	LEFT_ENCODER
+}ENCODER_CHANNEL;
+
+typedef enum
+{
+	VICTOR_ROLLER_RIGHT,
+	VICTOR_ROLLER_LEFT,
+	ELEVATOR_RIGHT_VICTOR,
+	ELEVATOR_LEFT_VICTOR
+
+}VICTOR_CHANNEL;
 
 typedef enum
 {
@@ -9,16 +28,18 @@ typedef enum
 	AUTONOMOUS_FOUR
 }AUTONOMOUS_OPTIONS;
 
+AUTONOMOUS_OPTIONS autonOptions;
+
 typedef enum
 {
-	SOLENOID_RIGHT_CLAW_EXTEND,
-	SOLENOID_RIGHT_CLAW_RETRACT,
-	SOLENOID_LEFT_CLAW_EXTEND,
-	SOLENOID_LEFT_CLAW_RETRACT
-
-
+	SOLENOID_CLAW_EXTEND,
+	SOLENOID_CLAW_RETRACT,
+	SOLENOID_ELEVATOR_EXTEND,
+	SOLENOID_ELEVATOR_RETRACT,
+	SOLENOID_ROLLERS_EXTEND,
+	SOLENOID_ROLLERS_RETRACT
 }SOLENOID_CHANNEL;
-AUTONOMOUS_OPTIONS autonOptions;
+
 
 
 class Robot: public IterativeRobot
@@ -29,19 +50,17 @@ class Robot: public IterativeRobot
 //	SmartDashboard driverDashboard;
 
 	LiveWindow *lw;
-	Talon joeTalon;
-	Talon kaylaTalon;
-	Talon loretta;
-	Talon rhonda;
-	Talon thing1;
-	Talon thing2;
+	Victor joeTalon;
+	Victor kaylaTalon;
+	Victor loretta;
+	Victor rhonda;
+	Victor thing1;
+	Victor thing2;
 //	Solenoid numanumamaticExtend;
 //	Solenoid numanumamaticRetract;
-	Solenoid shiftUpRightExtend;
-	Solenoid shiftUpRightRetract;
-	Solenoid shiftUpLeftExtend;
-	Solenoid shiftUpLeftRetract;
-	//Encoder rightEncoder;
+	Solenoid shiftUpExtend;
+	Solenoid shiftUpRetract;
+	Encoder rightEncoder;
 	DigitalInput clicker;
 	int autoLoopCounter = 0;
 	float lastCurve = 0;
@@ -52,11 +71,18 @@ class Robot: public IterativeRobot
 	bool dropRoutineStarted = false;
 	bool dropRoutineFinished = true;
 	int elevatorLevel = 1;
+	int encoderCountNow = 0;
+	int encoderCountPrev = 0;
 	bool yReleased;
 	bool rollersOpen = true;
 	bool numanumamaticIsPressed = false;
 	bool shiftUp = false;
+	float rollerSpeed = 0;
+	bool override;
 	Claw claws;
+	Elevator elevator;
+	Compressor compressor;
+	Rollers rollers;
 
 public:
 	Robot() :
@@ -71,13 +97,14 @@ public:
 		thing2(4),
 //		numanumamaticExtend(0),
 //		numanumamaticRetract(1),
-		shiftUpRightExtend(3),
-		shiftUpRightRetract(5),
-		shiftUpLeftExtend(4),
-		shiftUpLeftRetract(6),
-		//rightEncoder(0, 1, true)
+		shiftUpExtend(3),
+		shiftUpRetract(5),
+		rightEncoder(0, 1, true),
 		clicker(0),
-		claws(SOLENOID_RIGHT_CLAW_EXTEND, SOLENOID_RIGHT_CLAW_RETRACT, SOLENOID_LEFT_CLAW_EXTEND, SOLENOID_LEFT_CLAW_RETRACT)
+		claws(SOLENOID_CLAW_EXTEND, SOLENOID_CLAW_RETRACT),
+		elevator(SOLENOID_ELEVATOR_EXTEND, SOLENOID_ELEVATOR_RETRACT, ELEVATOR_RIGHT_VICTOR, ELEVATOR_LEFT_VICTOR, ELEVATOR_ENCODER_A, ELEVATOR_ENCODER_B),
+		compressor(5),
+		rollers(SOLENOID_ROLLERS_EXTEND, SOLENOID_ROLLERS_RETRACT, VICTOR_ROLLER_RIGHT, VICTOR_ROLLER_LEFT, rollerSpeed)
 		//autoLoopCounter(0),
 		//lastCurve(0)
 	{
@@ -93,6 +120,8 @@ private:
 	void AutonomousInit()
 	{
 		autoLoopCounter = 0;
+		compressor.Start();
+		rightEncoder.Reset();
 	}
 
 	void AutonomousPeriodic()
@@ -146,6 +175,7 @@ private:
 	void TeleopInit()
 	{
 		lastCurve = 1;
+		compressor.Start();
 	}
 
 	void TeleopDisabled()
@@ -183,7 +213,7 @@ private:
 		}
 
 		//Open Claw
-		if (stick.GetPOV(0) == 0 && clawOpen == false)
+		if (stick.GetPOV(0) == 0 && clawOpen == false && override == false)
 		{
 
 			clawOpen = true;
@@ -191,22 +221,25 @@ private:
 		}
 
 		//Close Claw
-		if (stick.GetPOV(0) == 180 && clawOpen == true)
+		if (stick.GetPOV(0) == 180 && clawOpen == true && override == false)
 		{
 			clawOpen = false;
 			claws.CloseClaw();
 		}
 
 		//Extend Elevator
-		if (stick.GetPOV(2) == true && elevatorExtended == false)
+		if (stick.GetPOV(0) == 90 && elevatorExtended == false)
 		{
 			elevatorExtended = true;
+			elevator.ExtendElevator();
+
 		}
 
 		//Retract Elevator
-		if (stick.GetPOV(6) == true && elevatorExtended == true)
+		if (stick.GetPOV(0) == 270 && elevatorExtended == true)
 		{
 			elevatorExtended = false;
+			elevator.RetractElevator();
 		}
 
 		//Drop Routine Start
@@ -232,31 +265,41 @@ private:
 		}
 
 		// Open Claw and rollers
-		if (stick.GetRawButton(4) && yReleased == true)
+		if (stick.GetRawButton(4) == true && yReleased == true)
 		{
-			if (stick.GetRawButton(5) == true && rollersOpen == false)
-			{
-				rollersOpen = true;
-				//override left bumper
-			}
+			override = true;
+//			if (stick.GetRawButton(5) == true && rollersOpen == false)
+//			{
+//				rollersOpen = true;
+//				//override left bumper
+//			}
 
 			// call ignore our POV 4 when called
 
 			clawOpen = true;
+			rollersOpen = false;
+			rollers.OpenRollers();
+			claws.OpenClaw();
 			// Call Open claw and rollers wide
+		}
+		else
+		{
+			override = false;
 		}
 
 		//Close Rollers
-		if (stick.GetRawButton(5) == true && rollersOpen == true)
+		if (stick.GetRawButton(5) == true && rollersOpen == true && override == false)
 		{
 			rollersOpen = false;
+			rollers.OpenRollers();
 			//Call close rollers function
 		}
 
 		//Open Rollers
-		else if (stick.GetRawButton(5) == false && rollersOpen == false)
+		else if (stick.GetRawButton(5) == false && rollersOpen == false && override == false)
 		{
 			rollersOpen = true;
+			rollers.CloseRollers();
 			//Call open rollers function
 		}
 
@@ -264,41 +307,41 @@ private:
 		if (stick.GetRawButton(6) == true && shiftUp == false)
 		{
 			shiftUp = true;
-			shiftUpRightExtend.Set(true);
-			shiftUpLeftExtend.Set(true);
-			shiftUpRightRetract.Set(false);
-			shiftUpLeftRetract.Set(false);
+			shiftUpExtend.Set(true);
+			shiftUpRetract.Set(false);
 		}
 
 		//Shift Down Gear
 		else if (stick.GetRawButton(6) == false && shiftUp == true)
 		{
 			shiftUp = false;
-			shiftUpRightExtend.Set(false);
-			shiftUpLeftExtend.Set(false);
-			shiftUpRightRetract.Set(true);
-			shiftUpLeftRetract.Set(true);
+			shiftUpExtend.Set(false);
+			shiftUpRetract.Set(true);
 		}
 
 		//Spin Rollers In
 		if (stick.GetRawAxis(2) >= 0.05)
 		{
-			thing1.SetSpeed(stick.GetRawAxis(2));
-			thing2.SetSpeed(-stick.GetRawAxis(2));
+			rollerSpeed = (stick.GetRawAxis(2));
+			rollers.Eat();
+//			thing1.SetSpeed(stick.GetRawAxis(2));
+//			thing2.SetSpeed(-stick.GetRawAxis(2));
 		}
 
 		//Spin Rollers Out
 		else if (stick.GetRawAxis(3) >= 0.05)
 		{
-			thing1.SetSpeed(-stick.GetRawAxis(2));
-			thing2.SetSpeed(stick.GetRawAxis(3));
+			rollerSpeed = (stick.GetRawAxis(3));
+			rollers.Barf();
+//			thing1.SetSpeed(-stick.GetRawAxis(2));
+//			thing2.SetSpeed(stick.GetRawAxis(3));
 		}
 
 		//Stop Rollers
 		else
 		{
-			thing2.SetSpeed(0.0);
-			thing1.SetSpeed(0.0);
+//			thing2.SetSpeed(0.0);
+//			thing1.SetSpeed(0.0);
 		}
 
 
@@ -352,7 +395,7 @@ private:
 
 	void AutonOne(void)
 	{
-
+		rightEncoder.Get();
 	}
 
 	void AutonTwo(void)

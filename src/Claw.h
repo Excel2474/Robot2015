@@ -12,13 +12,11 @@
 class Claw : public IterativeRobot
 {
 private:
-	Solenoid rightClawExtend;
-	Solenoid rightClawRetract;
-	Solenoid leftClawExtend;
-	Solenoid leftClawRetract;
+	Solenoid clawExtend;
+	Solenoid clawRetract;
 
 public: //Claw Functions
-	Claw(int right_claw_extend, int right_claw_retract, int left_claw_extend, int left_claw_retract);
+	Claw(int claw_extend, int claw_retract);
 	void OpenClaw();
 	void CloseClaw();
 
