@@ -11,13 +11,14 @@ typedef enum
 	LEFT_ENCODER
 }ENCODER_CHANNEL;
 
+
 typedef enum
 {
 	VICTOR_ROLLER_RIGHT,
 	VICTOR_ROLLER_LEFT,
 	ELEVATOR_RIGHT_VICTOR,
 	ELEVATOR_LEFT_VICTOR
-
+//Add your drive-train motors to this enumeration, and have joeTalon(DRIVE_TRAIN_MOTOR)
 }VICTOR_CHANNEL;
 
 typedef enum
@@ -187,35 +188,34 @@ private:
 	{
 		//double rightEncoderRate = rightEncoder.GetRate();
 		//double rightRPM = (rightEncoderRate/256) * 60;
-		myRobot.ArcadeDrive(stick); // drive with arcade style (use right stick)
+//		myRobot.ArcadeDrive(stick); // drive with arcade style (use right stick)
 
-		//Drive
-		if ((stick.GetRawAxis(1) < 0.1) && (stick.GetRawAxis(1) > -0.1))
-		{
-			joeTalon.SetSpeed(stick.GetRawAxis(4));
-			kaylaTalon.SetSpeed(-stick.GetRawAxis(4));
-		}
-		else
-		{
-			myRobot.Drive(stick.GetRawAxis(1), lastCurve);
-		}
+		myRobot.ArcadeDrive(stick.GetRawAxis(1), 0.7 * stick.GetRawAxis(4)); //0.7 dampens the stearing sensitivity, modify to taste
+//		//Drive don't do this, use arcade drive
+//		if ((stick.GetRawAxis(1) < 0.1) && (stick.GetRawAxis(1) > -0.1))
+//		{
+//			joeTalon.SetSpeed(stick.GetRawAxis(4));
+//			kaylaTalon.SetSpeed(-stick.GetRawAxis(4));
+//		}
+//		else
+//		{
+//		}
+//
+//
+//		if ((stick.GetRawAxis(4) - lastCurve) < -0.1 || (stick.GetRawAxis(4) - lastCurve) > 0.1)
+//		{
+//			lastCurve = stick.GetRawAxis(4);
+//		}
 
-
-		if ((stick.GetRawAxis(4) - lastCurve) < -0.1 || (stick.GetRawAxis(4) - lastCurve) > 0.1)
-		{
-			lastCurve = stick.GetRawAxis(4);
-		}
-
-		//Gear Box Motors
-		if(stick.GetRawButton(3) == true)
-		{
-			myRobot.Drive(.1, 0);
-		}
+//		//Gear Box Motors Test
+//		if(stick.GetRawButton(3) == true)
+//		{
+//			myRobot.Drive(.1, 0);
+//		}
 
 		//Open Claw
 		if (stick.GetPOV(0) == 0 && clawOpen == false && override == false)
 		{
-
 			clawOpen = true;
 			claws.OpenClaw();
 		}

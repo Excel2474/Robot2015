@@ -20,6 +20,8 @@ private:
 	Victor leftElevator;
 	Encoder elevatorEncoder;
 
+	PIDController elevatorPid;
+
 public: //Elevator Extend
 
 	Elevator(int elevator_extend, int elevator_retract, int right_elevator, int left_elevator, int elevator_encoder_A, int elevator_encoder_B);
