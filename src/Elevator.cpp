@@ -6,16 +6,19 @@
  */
 #include "Elevator.h"
 
-Elevator::Elevator(int elevator_extend, int elevator_retract, int right_elevator, int left_elevator, int elevator_encoder_A, int elevator_encoder_B):
+Elevator::Elevator(int elevator_extend, int elevator_retract, int elevator_motor, int elevator_encoder_A, int elevator_encoder_B, int lower_limit, int upper_limit):
 elevatorExtend(elevator_extend),
 elevatorRetract(elevator_retract),
-rightElevator(right_elevator),
-leftElevator(left_elevator),
+elevatorMotor(elevator_motor),
 elevatorEncoder(elevator_encoder_A, elevator_encoder_B, true),
-elevatorPid(0.1, 0.01, 0.0,  elevatorEncoder, leftElevator) //you must use a split pwm to drive both victors from one pwm output; then you just have an elevatorMotor victor declaration, which drives two motors
-{
-//	elevatorEncoder.SetDistancePerPulse((distPerPulse/pulsesPerRotation)) 256 pulses per rotation; ??? distance per rotation (compute ths from gear ratios and ),
+lowerLimit(lower_limit),
+upperLimit(upper_limit),
+elevatorPid(0.1, 0.01, 0.0, elevatorEncoder, elevatorMotor) //you must use a split pwm to drive both victors from one pwm output; then you just have an elevatorMotor victor declaration, which drives two motors
 
+{
+	elevatorEncoder.SetDistancePerPulse(0.04297600575);
+//	elevatorEncoder.SetDistancePerPulse((distPerPulse/pulsesPerRotation)) 256 pulses per rotation; ??? distance per rotation (compute this from gear ratios and
+// pd = 1.751, ratio = 1:2, 2(pi)1.751
 }
 
 void Elevator::ExtendElevator()
@@ -31,29 +34,34 @@ void Elevator::RetractElevator()
 	elevatorRetract.Set(true);
 }
 
-void Elevator::LevelUp()
-{
-	elevatorEncoder.Reset();
-	if (elevatorEncoder.Get() < 42)
-	{
-		rightElevator.SetSpeed(0.5);
-		leftElevator.SetSpeed(0.5);
-	}
-	else if (elevatorEncoder.Get() >= 42)
-	{
-		rightElevator.SetSpeed(0.0);
-		leftElevator.SetSpeed(0.0);
-	}
-}
-
-void Elevator::LevelDown()
-{
-
-}
+//void Elevator::LevelUp()
+//{
+//	elevatorEncoder.Reset();
+//	if (elevatorEncoder.Get() < 42)
+//	{
+//		rightElevator.SetSpeed(0.5);
+//		leftElevator.SetSpeed(0.5);
+//	}
+//	else if (elevatorEncoder.Get() >= 42)
+//	{
+//		rightElevator.SetSpeed(0.0);
+//		leftElevator.SetSpeed(0.0);
+//	}
+//}
+//
+//void Elevator::LevelDown()
+//{
+//
+//}
 
 void Elevator::Execute()
 {
-	//This will have to keep track while the elevator is reseting whatching for the limit switch, once it hits the switch then reset the encoder and pid, then set the pid setpoint to 0 and enable it
+		if (lowerLimit.Get() == true)
+		{
+			elevatorEncoder.Reset();
+			elevatorPid.Reset();
+		}
+	//This will have to keep track while the elevator is reseting watching for the limit switch, once it hits the switch then reset the encoder and pid, then set the pid setpoint to 0 and enable it
 }
 
 void Elevator::Reset()
@@ -64,6 +72,14 @@ void Elevator::Reset()
 
 void Elevator::SetLevel()
 {
+	if (elevatorEncoder.Get() == 0)
+	{
+
+	}
+	else
+	{
+		elevatorEncoder.Reset();
+	}
 	//Make sure the elevator has been reset, if it hasn't, do that instead and just return from this after calling it
 
 	//Then, make sure the level exists, because reasons, or just use a switch case statement to map level number to setpoint value
