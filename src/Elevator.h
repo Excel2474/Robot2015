@@ -9,6 +9,16 @@
 #ifndef SRC_ELEVATOR_H_
 #define SRC_ELEVATOR_H_
 
+// v v These values will be the corresponding encoder counts for each level. We don't know them yet.
+#define LEVEL_ZERO 0 // Except maybe this one; the encoder count for the very lowest level is probably 0--right? (8 inches from floor)
+#define LEVEL_ONE 136 // ^(14 in, +6) ^
+#define LEVEL_TWO 409// ^ ^
+#define LEVEL_THREE 682// ^ ^
+#define LEVEL_FOUR 954// ^ ^
+#define LEVEL_FIVE 1227// ^ ^
+#define LEVEL_SIX 1500// ^ ^
+// 1 inch = 22.7234 pulses
+
 class Elevator : public IterativeRobot
 {
 
@@ -31,7 +41,7 @@ public: //Elevator Extend
 	void RetractElevator();
 	void Execute();
 	void Reset();
-	void SetLevel();
+	void SetLevel(int destinationLevel);
 
 };
 

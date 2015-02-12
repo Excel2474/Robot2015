@@ -191,7 +191,7 @@ private:
 		//double rightRPM = (rightEncoderRate/256) * 60;
 //		myRobot.ArcadeDrive(stick); // drive with arcade style (use right stick)
 
-		myRobot.ArcadeDrive(stick.GetRawAxis(1), 0.7 * stick.GetRawAxis(4)); //0.7 dampens the stearing sensitivity, modify to taste
+		myRobot.ArcadeDrive(stick.GetRawAxis(1), 0.7 * stick.GetRawAxis(4)); //0.7 dampens the steering sensitivity, modify to taste
 //		//Drive don't do this, use arcade drive
 //		if ((stick.GetRawAxis(1) < 0.1) && (stick.GetRawAxis(1) > -0.1))
 //		{
@@ -255,6 +255,7 @@ private:
 		if (stick.GetRawButton(1) == true && elevatorLevel != 0)
 		{
 			elevatorLevel = elevatorLevel - 1;
+			elevator.SetLevel(elevatorLevel);
 			//Call lower elevator function
 		}
 
@@ -262,6 +263,7 @@ private:
 		if (stick.GetRawButton(2) == true && elevatorLevel != 6)
 		{
 			elevatorLevel = elevatorLevel + 1;
+			elevator.SetLeve
 			//Call raise elevator function
 		}
 

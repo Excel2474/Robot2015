@@ -13,12 +13,13 @@ elevatorMotor(elevator_motor),
 elevatorEncoder(elevator_encoder_A, elevator_encoder_B, true),
 lowerLimit(lower_limit),
 upperLimit(upper_limit),
-elevatorPid(0.1, 0.01, 0.0, elevatorEncoder, elevatorMotor) //you must use a split pwm to drive both victors from one pwm output; then you just have an elevatorMotor victor declaration, which drives two motors
+elevatorPid(0.1, 0.01, 0.0, &elevatorEncoder, &elevatorMotor) //you must use a split pwm to drive both victors from one pwm output; then you just have an elevatorMotor victor declaration, which drives two motors
 
 {
-	elevatorEncoder.SetDistancePerPulse(0.04297600575);
+	elevatorEncoder.SetDistancePerPulse(0.044007429891485);
 //	elevatorEncoder.SetDistancePerPulse((distPerPulse/pulsesPerRotation)) 256 pulses per rotation; ??? distance per rotation (compute this from gear ratios and
 // pd = 1.751, ratio = 1:2, 2(pi)1.751
+
 }
 
 void Elevator::ExtendElevator()
@@ -70,11 +71,52 @@ void Elevator::Reset()
 //This would need to be called before your first go to command, so you should keep track of whether or not it has been initialized with a boolean, and in the set routine call reset if it hasn't been done
 }
 
-void Elevator::SetLevel()
+void Elevator::SetLevel(int destinationLevel)
 {
 	if (elevatorEncoder.Get() == 0)
 	{
+		if (destinationLevel >= 0 && destinationLevel <= 6) // Makes sure level exists -- because reasons
+		{
+			switch (destinationLevel)
+			{
+			case 0:
+				if (lowerLimit.Get() == false)
+				{
+					elevatorPid.SetSetpoint(LEVEL_ZERO);
+				}
+				//else
+				//{
+				//	elevatorMotor.SetSpeed(0);	//Do we need this? It would be useful, wouldn't it?
+				//}
+				break;
 
+			case 1:
+				elevatorPid.SetSetpoint(LEVEL_ONE); //This is a dummy value right now. We will need to determine the values for these constants
+				break;
+			case 2:
+				elevatorPid.SetSetpoint(LEVEL_TWO); //This is a dummy value right now. We will need to determine the values for these constants
+				break;
+			case 3:
+				elevatorPid.SetSetpoint(LEVEL_THREE); //This is a dummy value right now. We will need to determine the values for these constants
+				break;
+			case 4:
+				elevatorPid.SetSetpoint(LEVEL_FOUR); //This is a dummy value right now. We will need to determine the values for these constants
+				break;
+			case 5:
+				elevatorPid.SetSetpoint(LEVEL_FIVE); //This is a dummy value right now. We will need to determine the values for these constants
+				break;
+			case 6:
+				if (upperLimit.Get() == false)
+				{
+					elevatorPid.SetSetpoint(LEVEL_SIX);
+				}
+				//else
+				//{
+				//	elevatorMotor.SetSpeed(0);	//Do we need this? It would be useful, wouldn't it?
+				//}
+				break;
+			}
+		}
 	}
 	else
 	{
