@@ -39,7 +39,8 @@ typedef enum
 	SOLENOID_ELEVATOR_EXTEND,
 	SOLENOID_ELEVATOR_RETRACT,
 	SOLENOID_ROLLERS_EXTEND,
-	SOLENOID_ROLLERS_RETRACT
+	SOLENOID_ROLLERS_RETRACT,
+	SOLENOID_ELEVATOR_BRAKE
 }SOLENOID_CHANNEL;
 
 
@@ -63,8 +64,8 @@ class Robot: public IterativeRobot
 	Solenoid shiftUpExtend;
 	Solenoid shiftUpRetract;
 	Encoder rightEncoder;
+	Encoder leftEncoder;
 	DigitalInput clicker;
-	int autoLoopCounter = 0;
 	float lastCurve = 0;
 	bool curvyWurvy = false;
 	bool extended = false;
@@ -72,6 +73,7 @@ class Robot: public IterativeRobot
 	bool elevatorExtended = false;
 	bool dropRoutineStarted = false;
 	bool dropRoutineFinished = true;
+	int autoLoopCounter = 0;
 	int elevatorLevel = 1;
 	int encoderCountNow = 0;
 	int encoderCountPrev = 0;
@@ -81,6 +83,8 @@ class Robot: public IterativeRobot
 	bool shiftUp = false;
 	float rollerSpeed = 0;
 	bool override;
+	bool goingToLevel = false;
+	Timer brakeTime;
 	Claw claws;
 	Elevator elevator;
 	Compressor compressor;
@@ -102,9 +106,10 @@ public:
 		shiftUpExtend(3),
 		shiftUpRetract(5),
 		rightEncoder(0, 1, true),
+		leftEncoder(2, 3, true),
 		clicker(0),
 		claws(SOLENOID_CLAW_EXTEND, SOLENOID_CLAW_RETRACT),
-		elevator(SOLENOID_ELEVATOR_EXTEND, SOLENOID_ELEVATOR_RETRACT, ELEVATOR_VICTOR, ELEVATOR_ENCODER_A, ELEVATOR_ENCODER_B, LOWER_LIMIT_SWITCH, UPPER_LIMIT_SWITCH),
+		elevator(SOLENOID_ELEVATOR_EXTEND, SOLENOID_ELEVATOR_RETRACT, SOLENOID_ELEVATOR_BRAKE, ELEVATOR_VICTOR, ELEVATOR_ENCODER_A, ELEVATOR_ENCODER_B, LOWER_LIMIT_SWITCH, UPPER_LIMIT_SWITCH),
 		compressor(5),
 		rollers(SOLENOID_ROLLERS_EXTEND, SOLENOID_ROLLERS_RETRACT, VICTOR_ROLLER_RIGHT, VICTOR_ROLLER_LEFT, rollerSpeed)
 		//autoLoopCounter(0),
@@ -117,6 +122,7 @@ private:
 	void RobotInit()
 	{
 		lw = LiveWindow::GetInstance();
+		goingToLevel = false;
 	}
 
 	void AutonomousInit()
@@ -124,6 +130,7 @@ private:
 		autoLoopCounter = 0;
 		compressor.Start();
 		rightEncoder.Reset();
+		leftEncoder.Reset();
 	}
 
 	void AutonomousPeriodic()
@@ -222,7 +229,7 @@ private:
 		}
 
 		//Close Claw
-		if (stick.GetPOV(0) == 180 && clawOpen == true && override == false)
+		if (stick.GetPOV(0) == 180 && clawOpen == true && override == false && elevatorExtended == false)
 		{
 			clawOpen = false;
 			claws.CloseClaw();
@@ -232,6 +239,8 @@ private:
 		if (stick.GetPOV(0) == 90 && elevatorExtended == false)
 		{
 			elevatorExtended = true;
+			clawOpen = true;
+			claws.OpenClaw();
 			elevator.ExtendElevator();
 
 		}
@@ -251,7 +260,7 @@ private:
 			//Call drop routine
 		}
 
-		//Lower Elevator
+		//Lower Elevator Level
 		if (stick.GetRawButton(1) == true && elevatorLevel != 0)
 		{
 			elevatorLevel = elevatorLevel - 1;
@@ -259,12 +268,34 @@ private:
 			//Call lower elevator function
 		}
 
-		//Raise Elevator
+		//Raise Elevator Level
 		if (stick.GetRawButton(2) == true && elevatorLevel != 6)
 		{
-			elevatorLevel = elevatorLevel + 1;
-			elevator.SetLeve
+			goingToLevel = true;
+		}
+
+		if (goingToLevel == true)
+		{
+			elevator.BrakeOff();
+					brakeTime.Reset();
+					brakeTime.Start();
+					if (brakeTime.Get() > 0.1)
+					{
+						elevatorLevel = elevatorLevel + 1;
+						elevator.SetLevel(elevatorLevel);
+						if (elevator.IsAtLevel() == true)
+						{
+							elevator.BrakeOn();
+							goingToLevel = false;
+						}
+					}
+		}
 			//Call raise elevator function
+
+		//TEST CODE - Control elevator motor speed
+		if (stick.GetRawAxis(1) != 0) // I don't know if Axis 1 is being used yet, or what it is. We should check and change this
+		{
+			elevator.TestElevatorMotor(stick.GetRawAxis(1));
 		}
 
 		// Open Claw and rollers
@@ -396,9 +427,17 @@ private:
 		lw->Run();
 	}
 
-	void AutonOne(void)
+	void AutonOne(void) //Drives forward.
 	{
-		rightEncoder.Get();
+		if (autoLoopCounter <= 120)
+		{
+			myRobot.Drive(1, 0);
+			autoLoopCounter++;
+		}
+		else
+		{
+			myRobot.Drive(0, 0);
+		}
 	}
 
 	void AutonTwo(void)
