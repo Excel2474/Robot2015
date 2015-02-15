@@ -6,14 +6,16 @@
  */
 #include "Elevator.h"
 
-Elevator::Elevator(int elevator_extend, int elevator_retract, int elevator_brake, int elevator_motor, int elevator_encoder_A, int elevator_encoder_B, int lower_limit, int upper_limit):
+Elevator::Elevator(int elevator_extend, int elevator_retract, int elevator_brake, int elevator_motor, int elevator_encoder_A, int elevator_encoder_B, int lower_left_limit, int lower_right_limit, int upper_left_limit, int upper_right_limit):
 elevatorExtend(elevator_extend),
 elevatorRetract(elevator_retract),
 elevatorBrake(elevator_brake),
 elevatorMotor(elevator_motor),
 elevatorEncoder(elevator_encoder_A, elevator_encoder_B, true),
-lowerLimit(lower_limit),
-upperLimit(upper_limit),
+leftLowerLimit(lower_left_limit),
+rightLowerLimit(lower_right_limit),
+leftUpperLimit(upper_left_limit),
+rightUpperLimit(upper_right_limit),
 destinationLevel(LEVEL_ONE),
 elevatorPid(0.1, 0.01, 0.0, &elevatorEncoder, &elevatorMotor) //you must use a split pwm to drive both victors from one pwm output; then you just have an elevatorMotor victor declaration, which drives two motors
 
@@ -59,7 +61,7 @@ void Elevator::RetractElevator()
 
 void Elevator::Execute()
 {
-		if (lowerLimit.Get() == true)
+		if (leftLowerLimit.Get() == true || rightLowerLimit.Get() == true)
 		{
 			elevatorEncoder.Reset();
 			elevatorPid.Reset();
@@ -105,7 +107,7 @@ void Elevator::SetLevel(int destinationLevel)
 		switch (destinationLevel)
 		{
 		case 0:
-			if (lowerLimit.Get() == false)
+			if (leftLowerLimit.Get() == false && rightLowerLimit.Get() == false)
 			{
 				elevatorPid.SetSetpoint(LEVEL_ZERO);
 				destinationLevel = LEVEL_ZERO;
@@ -138,7 +140,7 @@ void Elevator::SetLevel(int destinationLevel)
 			destinationLevel = LEVEL_FIVE;
 			break;
 		case 6:
-			if (upperLimit.Get() == false)
+			if (leftUpperLimit.Get() == false && rightUpperLimit.Get() == false)
 			{
 				elevatorPid.SetSetpoint(LEVEL_SIX);
 				destinationLevel = LEVEL_SIX;
@@ -148,6 +150,8 @@ void Elevator::SetLevel(int destinationLevel)
 				elevatorMotor.SetSpeed(0);	//Do we need this? It would be useful, wouldn't it?  NO!!!
 			}
 			break;
+		case 7:
+			elevatorMotor.SetSpeed(0);
 		}
 	}
 	else
@@ -166,9 +170,9 @@ void Elevator::SetLevel(int destinationLevel)
 	//your go up level and go down level functions should call this, to do that, just keep track of the current desired level, and add/subtract a level and call this function with the new desired level
 	//If you do incremental level up/down, add feedback leds to robot to indicate what level it is currently trying to go to, otherwise you should just use a button for each level.
 
-bool Elevator::IsAtLevel() //desiredLevel is in encoder counts
+bool Elevator::IsAtLevel()
 {
-	if (destinationLevel < (elevatorEncoder.Get() + 0.5) && (destinationLevel > (elevatorEncoder.Get() - 0.5))) //destinationLevel >= (elevatorEncoder.Get() - 1.0) && destinationLevel <= (elevatorEncoder.Get() + 1)
+	if ((destinationLevel < (elevatorEncoder.Get() + 1)) && (destinationLevel > (elevatorEncoder.Get() - 1))) //destinationLevel >= (elevatorEncoder.Get() - 1.0) && destinationLevel <= (elevatorEncoder.Get() + 1)
 	{
 		return true;
 	}
@@ -178,32 +182,31 @@ bool Elevator::IsAtLevel() //desiredLevel is in encoder counts
 	}
 }
 
-void Elevator::TestElevatorMotor(int motorSpeed)
+void Elevator::TestElevatorMotor(float motorSpeed)
 {
 	//logic to measure: "if it's at the top, it won't run up" and "if it's at the bottom, it won't run down"
 	//I don't know how the motor is oriented, so the stick axis/motor direction correspondence may be wrong
-	if (motorSpeed < 0)
+	if (motorSpeed < -0.1)
 	{
-		if (elevatorEncoder.Get() == 0)
+		if ( /* elevatorEncoder.Get() == 0 || */ leftLowerLimit.Get() == false /* || rightLowerLimit.Get() == true */)
 		{
 			elevatorMotor.SetSpeed(0);
 		}
 		else
 		{
-			elevatorMotor.SetSpeed(motorSpeed);
+			elevatorMotor.SetSpeed(motorSpeed * 0.6); //Buffer, just in case
 		}
 	}
-	else if (motorSpeed > 0)
+	else if (motorSpeed > 0.1)
 	{
-		if (elevatorEncoder.Get() == 1500) //We should define a constant for the maximum possible count the encoder can have. For now, I'm using the count value for Level Six
-		{
-			elevatorMotor.SetSpeed(0);
-		}
-		else
-		{
-			elevatorMotor.SetSpeed(motorSpeed);
-
-		}
+//		if (elevatorEncoder.Get() == 1500 || leftUpperLimit.Get() == true || rightUpperLimit.Get() == true ) //We should define a constant for the maximum possible count the encoder can have. For now, I'm using the count value for Level Six
+//		{
+//			elevatorMotor.SetSpeed(0);
+//		}
+//		else
+//		{
+			elevatorMotor.SetSpeed(motorSpeed * 0.6); //Buffer, just in case
+//		}
 	}
 	else
 	{

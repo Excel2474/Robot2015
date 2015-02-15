@@ -3,16 +3,24 @@
 #include "Elevator.h"
 #include "Rollers.h"
 
+#define DRIVEWHEEL_CIRCUMFERENCE 18.8495559215 //In inches, given 6-wheels
+//Robot drives 18.8495559215 inches/rotation
+#define DRIVEWHEEL_INCHES_PER_PULSE 0.07363107781
+// (circumference/pulses per rotation)
+#define DRIVEWHEEL_PULSES_PER_INCH 13.5812218105
+// (256 pulses / circumference)
+
 typedef enum
 {
 	ELEVATOR_ENCODER_A,
 	ELEVATOR_ENCODER_B,
 	RIGHT_ENCODER,
 	LEFT_ENCODER,
-	LOWER_LIMIT_SWITCH,
-	UPPER_LIMIT_SWITCH
+	LOWER_LEFT_LIMIT_SWITCH,
+	LOWER_RIGHT_LIMIT_SWITCH,
+	UPPER_LEFT_LIMIT_SWITCH,
+	UPPER_RIGHT_LIMIT_SWITCH
 }DIGITAL_OUTPUT_CHANNEL;
-
 
 typedef enum
 {
@@ -47,10 +55,9 @@ typedef enum
 
 class Robot: public IterativeRobot
 {
-
 	RobotDrive myRobot; // robot drive system
 	Joystick stick; // only joystick
-//	SmartDashboard driverDashboard;
+	//SmartDashboard driverDashboard;
 
 	LiveWindow *lw;
 	Victor joeTalon;
@@ -73,6 +80,8 @@ class Robot: public IterativeRobot
 	bool elevatorExtended = false;
 	bool dropRoutineStarted = false;
 	bool dropRoutineFinished = true;
+	bool droveStraight = true;
+	bool turnt = true;
 	int autoLoopCounter = 0;
 	int elevatorLevel = 1;
 	int encoderCountNow = 0;
@@ -83,8 +92,10 @@ class Robot: public IterativeRobot
 	bool shiftUp = false;
 	float rollerSpeed = 0;
 	bool override;
-	bool goingToLevel = false;
+	bool goingUp = false;
+	bool goingDown = false;
 	Timer brakeTime;
+	Timer autonTimer;
 	Claw claws;
 	Elevator elevator;
 	Compressor compressor;
@@ -109,25 +120,29 @@ public:
 		leftEncoder(2, 3, true),
 		clicker(0),
 		claws(SOLENOID_CLAW_EXTEND, SOLENOID_CLAW_RETRACT),
-		elevator(SOLENOID_ELEVATOR_EXTEND, SOLENOID_ELEVATOR_RETRACT, SOLENOID_ELEVATOR_BRAKE, ELEVATOR_VICTOR, ELEVATOR_ENCODER_A, ELEVATOR_ENCODER_B, LOWER_LIMIT_SWITCH, UPPER_LIMIT_SWITCH),
+		elevator(SOLENOID_ELEVATOR_EXTEND, SOLENOID_ELEVATOR_RETRACT, SOLENOID_ELEVATOR_BRAKE, ELEVATOR_VICTOR, ELEVATOR_ENCODER_A, ELEVATOR_ENCODER_B, LOWER_LEFT_LIMIT_SWITCH, LOWER_RIGHT_LIMIT_SWITCH, UPPER_LEFT_LIMIT_SWITCH, UPPER_RIGHT_LIMIT_SWITCH),
 		compressor(5),
 		rollers(SOLENOID_ROLLERS_EXTEND, SOLENOID_ROLLERS_RETRACT, VICTOR_ROLLER_RIGHT, VICTOR_ROLLER_LEFT, rollerSpeed)
 		//autoLoopCounter(0),
 		//lastCurve(0)
 	{
 		myRobot.SetExpiration(0.1);
+		SmartDashboard::init();
 	}
 
 private:
 	void RobotInit()
 	{
 		lw = LiveWindow::GetInstance();
-		goingToLevel = false;
+		goingUp = false;
+		goingDown = false;
 	}
 
 	void AutonomousInit()
 	{
 		autoLoopCounter = 0;
+		autonTimer.Reset();
+		autonTimer.Start();
 		compressor.Start();
 		rightEncoder.Reset();
 		leftEncoder.Reset();
@@ -229,7 +244,7 @@ private:
 		}
 
 		//Close Claw
-		if (stick.GetPOV(0) == 180 && clawOpen == true && override == false && elevatorExtended == false)
+		if (stick.GetPOV(0) == 180 && clawOpen == true && override == false)
 		{
 			clawOpen = false;
 			claws.CloseClaw();
@@ -239,8 +254,8 @@ private:
 		if (stick.GetPOV(0) == 90 && elevatorExtended == false)
 		{
 			elevatorExtended = true;
-			clawOpen = true;
-			claws.OpenClaw();
+			rollersOpen = true;
+			rollers.OpenRollers();
 			elevator.ExtendElevator();
 
 		}
@@ -263,39 +278,58 @@ private:
 		//Lower Elevator Level
 		if (stick.GetRawButton(1) == true && elevatorLevel != 0)
 		{
-			elevatorLevel = elevatorLevel - 1;
-			elevator.SetLevel(elevatorLevel);
-			//Call lower elevator function
+			goingDown = true;
+		}
+		if (goingDown == true && goingUp == false) //This logic here with the && needs to be checked. -Ben
+		{
+			elevator.BrakeOff();
+			brakeTime.Reset();
+			brakeTime.Start();
+			if (brakeTime.Get() > 0.1)
+			{
+				elevatorLevel = elevatorLevel - 1;
+				elevator.SetLevel(elevatorLevel);
+				//^Call LOWER elevator function
+				if (elevator.IsAtLevel() == true)
+				{
+					elevator.BrakeOn();
+					goingDown = false;
+					SmartDashboard::PutNumber("Stinky", elevatorLevel);
+				}
+			}
 		}
 
 		//Raise Elevator Level
 		if (stick.GetRawButton(2) == true && elevatorLevel != 6)
 		{
-			goingToLevel = true;
+			goingUp = true;
 		}
-
-		if (goingToLevel == true)
+		if (goingUp == true && goingDown == false) //This logic right here with the && needs to be checked. -Ben
 		{
 			elevator.BrakeOff();
-					brakeTime.Reset();
-					brakeTime.Start();
-					if (brakeTime.Get() > 0.1)
-					{
-						elevatorLevel = elevatorLevel + 1;
-						elevator.SetLevel(elevatorLevel);
-						if (elevator.IsAtLevel() == true)
-						{
-							elevator.BrakeOn();
-							goingToLevel = false;
-						}
-					}
+			brakeTime.Reset();
+			brakeTime.Start();
+			if (brakeTime.Get() > 0.1)
+			{
+				elevatorLevel = elevatorLevel + 1;
+				elevator.SetLevel(elevatorLevel);
+				//^Call RAISE elevator function
+				if (elevator.IsAtLevel() == true)
+				{
+					elevator.BrakeOn();
+					goingUp = false;
+				}
+			}
 		}
-			//Call raise elevator function
 
 		//TEST CODE - Control elevator motor speed
-		if (stick.GetRawAxis(1) != 0) // I don't know if Axis 1 is being used yet, or what it is. We should check and change this
+		if (stick.GetRawAxis(0) < -0.1 || stick.GetRawAxis(0) > 0.1)
 		{
-			elevator.TestElevatorMotor(stick.GetRawAxis(1));
+			elevator.TestElevatorMotor(stick.GetRawAxis(0));
+		}
+		else
+		{
+			elevator.TestElevatorMotor(0);
 		}
 
 		// Open Claw and rollers
@@ -322,10 +356,10 @@ private:
 		}
 
 		//Close Rollers
-		if (stick.GetRawButton(5) == true && rollersOpen == true && override == false)
+		if (stick.GetRawButton(5) == true && rollersOpen == true && override == false && elevatorLevel != 0 && elevatorExtended)
 		{
 			rollersOpen = false;
-			rollers.OpenRollers();
+			rollers.CloseRollers();
 			//Call close rollers function
 		}
 
@@ -333,7 +367,7 @@ private:
 		else if (stick.GetRawButton(5) == false && rollersOpen == false && override == false)
 		{
 			rollersOpen = true;
-			rollers.CloseRollers();
+			rollers.OpenRollers();
 			//Call open rollers function
 		}
 
@@ -420,6 +454,9 @@ private:
 //			{
 //				numanumamaticIsPressed = false;
 //			}
+
+		SmartDashboard::PutString("DB/String0", "Pooping");
+
 	}
 
 	void TestPeriodic()
@@ -427,22 +464,112 @@ private:
 		lw->Run();
 	}
 
-	void AutonOne(void) //Drives forward.
+
+	//Autonomous functions zone start
+
+	void Auto_DriveStraightDistance(float distance, float speed) //distance in inches
 	{
-		if (autoLoopCounter <= 120)
+		rightEncoder.Reset();
+		leftEncoder.Reset();
+//		if(droveStraight == true)
+//		{
+//			rightEncoder.Reset();
+//			leftEncoder.Reset();
+//			droveStraight = false;
+//		}
+		if (rightEncoder.Get() < (distance * DRIVEWHEEL_PULSES_PER_INCH) && leftEncoder.Get() < (distance * DRIVEWHEEL_PULSES_PER_INCH)) //Might need a buffer here
 		{
-			myRobot.Drive(1, 0);
-			autoLoopCounter++;
+			myRobot.Drive(speed, 0.0);
 		}
 		else
 		{
-			myRobot.Drive(0, 0);
+			myRobot.Drive(0.0, 0.0);
+			droveStraight = true;
+		}
+	}
+	void Auto_ZeroPointTurn(float degrees, float speed)
+	{
+		//TODO: figure out rotations/degree for the drive wheels when both sides are moving opposite directions (i.e. stationary turning)
+
+		/**
+		if (turnt == true)
+		{
+			rightEncoder.Reset();
+			leftEncoder.Reset();
+			turnt = false;
+		}
+		if (encoder angle check stuff)
+		{
+			myRobot.ArcadeDrive(0, angle conversion stuff);
+		}
+		else
+		{
+			myRobot.ArcadeDrive(0.0, 0.0);
+			turnt = true;
+		}
+		*/
+	}
+
+	//Autonomous functions zone end
+
+	void AutonOne(void) //Drives forward.
+	{
+		if (autonTimer.Get() < 10) //10 seconds is more than enough. We just don't yet know how long it will take for the robot to drive however far forward. This is how we're going to sequence autonomous stuff: giving functions set completion times. -Ben
+		{
+			Auto_DriveStraightDistance(12, 0.5); //Forward one foot, for now
 		}
 	}
 
-	void AutonTwo(void)
+	void AutonTwo(void) //Grasps a yellow tote, turns, drives into the Auto Zone, and goes and sets it on the Landmark
 	{
+		//For now, we'll code this in regards to starting at the middle yellow tote
 
+
+		if (autonTimer.Get() <= 2) //GUESSED TIME
+		{
+			claws.CloseClaw();
+			elevator.SetLevel(1);
+			if (elevator.IsAtLevel() == true)
+			{
+				elevator.BrakeOn();
+			}
+		}
+		if (autonTimer.Get() > 2 && autonTimer.Get() <= 3) //GUESSED TIMES
+		{
+			Auto_DriveStraightDistance(3, -1.0);
+		}
+		//^^^vvv We could probably combine these two movements: moving back and turning towards the auto zone. -Ben
+		if (autonTimer.Get() > 3 && autonTimer.Get() <= 5) //GUESSED TIMES
+		{
+			Auto_ZeroPointTurn(90, 1.0);
+		}
+		if (autonTimer.Get() > 5 && autonTimer.Get() <= 9) //GUESSED TIMES
+		{
+			Auto_DriveStraightDistance(107, 1.0);
+		}
+		if (autonTimer.Get() > 9 && autonTimer.Get() <= 11) //GUESSED TIMES
+		{
+			Auto_ZeroPointTurn(-90, 1.0);
+		}
+		//^^^vvv Same here. We could combine these.
+		if (autonTimer.Get() > 11 && autonTimer.Get() <= 12) //GUESSED TIMES
+		{
+			Auto_DriveStraightDistance(24, 1.0);
+		}
+		if (autonTimer.Get() > 12 && autonTimer.Get() <= 14) //GUESSED TIMES
+		{
+			elevator.BrakeOff();
+			elevator.SetLevel(0);
+			if (elevator.IsAtLevel() == true)
+			{
+				elevator.BrakeOn();
+				claws.OpenClaw();
+			}
+		}
+		if (autonTimer.Get() > 14)
+		{
+			Auto_DriveStraightDistance(36, -1.0);
+		}
 	}
 
 	void AutonThree(void)
