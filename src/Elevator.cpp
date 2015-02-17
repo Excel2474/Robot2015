@@ -23,7 +23,7 @@ elevatorPid(0.1, 0.01, 0.0, &elevatorEncoder, &elevatorMotor) //you must use a s
 	elevatorEncoder.SetDistancePerPulse(0.044007429891485);
 //	elevatorEncoder.SetDistancePerPulse((distPerPulse/pulsesPerRotation)) 256 pulses per rotation; ??? distance per rotation (compute this from gear ratios and
 // pd = 1.751, ratio = 1:2, 2(pi)1.751
-
+	SmartDashboard::init();
 }
 
 void Elevator::ExtendElevator()
@@ -174,6 +174,7 @@ bool Elevator::IsAtLevel()
 {
 	if ((destinationLevel < (elevatorEncoder.Get() + 1)) && (destinationLevel > (elevatorEncoder.Get() - 1))) //destinationLevel >= (elevatorEncoder.Get() - 1.0) && destinationLevel <= (elevatorEncoder.Get() + 1)
 	{
+		SmartDashboard::PutNumber("Current Elevator Level", destinationLevel);
 		return true;
 	}
 	else

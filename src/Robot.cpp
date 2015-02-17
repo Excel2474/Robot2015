@@ -24,9 +24,12 @@ typedef enum
 
 typedef enum
 {
-	VICTOR_ROLLER_RIGHT,
-	VICTOR_ROLLER_LEFT,
-	ELEVATOR_VICTOR
+	POINTLESS_DUMB_UNOCCUPIED_MOTOR, //0
+	LEFT_ROLLER_MOTOR, //1
+	LEFT_DRIVE_MOTOR, //2
+	ELEVATOR_MOTOR, //3
+	RIGHT_ROLLER_MOTOR, //4
+	RIGHT_DRIVE_MOTOR, //5
 //Add your drive-train motors to this enumeration, and have joeTalon(DRIVE_TRAIN_MOTOR)
 }VICTOR_CHANNEL;
 
@@ -62,8 +65,8 @@ class Robot: public IterativeRobot
 	LiveWindow *lw;
 	Victor joeTalon;
 	Victor kaylaTalon;
-	Victor loretta;
-	Victor rhonda;
+//	Victor loretta;  Rest in peace Loretta, you will be missed.
+//	Victor rhonda; Rest in peace Rhonda, you will be missed more.
 	Victor thing1;
 	Victor thing2;
 //	Solenoid numanumamaticExtend;
@@ -103,13 +106,13 @@ class Robot: public IterativeRobot
 
 public:
 	Robot() :
-		myRobot(loretta, rhonda, joeTalon, kaylaTalon),	// these must be initialized in the same order
+		myRobot(joeTalon, kaylaTalon),	// these must be initialized in the same order
 		stick(0),// as they are declared above.
 		lw(NULL),
-		joeTalon(7),
-		kaylaTalon(6),
-		loretta(9),
-		rhonda(8),
+		joeTalon(LEFT_DRIVE_MOTOR),
+		kaylaTalon(RIGHT_DRIVE_MOTOR),
+//		loretta(9),
+//		rhonda(8),
 		thing1(5),
 		thing2(4),
 //		numanumamaticExtend(0),
@@ -120,9 +123,9 @@ public:
 		leftEncoder(2, 3, true),
 		clicker(0),
 		claws(SOLENOID_CLAW_EXTEND, SOLENOID_CLAW_RETRACT),
-		elevator(SOLENOID_ELEVATOR_EXTEND, SOLENOID_ELEVATOR_RETRACT, SOLENOID_ELEVATOR_BRAKE, ELEVATOR_VICTOR, ELEVATOR_ENCODER_A, ELEVATOR_ENCODER_B, LOWER_LEFT_LIMIT_SWITCH, LOWER_RIGHT_LIMIT_SWITCH, UPPER_LEFT_LIMIT_SWITCH, UPPER_RIGHT_LIMIT_SWITCH),
+		elevator(SOLENOID_ELEVATOR_EXTEND, SOLENOID_ELEVATOR_RETRACT, SOLENOID_ELEVATOR_BRAKE, ELEVATOR_MOTOR, ELEVATOR_ENCODER_A, ELEVATOR_ENCODER_B, LOWER_LEFT_LIMIT_SWITCH, LOWER_RIGHT_LIMIT_SWITCH, UPPER_LEFT_LIMIT_SWITCH, UPPER_RIGHT_LIMIT_SWITCH),
 		compressor(5),
-		rollers(SOLENOID_ROLLERS_EXTEND, SOLENOID_ROLLERS_RETRACT, VICTOR_ROLLER_RIGHT, VICTOR_ROLLER_LEFT, rollerSpeed)
+		rollers(SOLENOID_ROLLERS_EXTEND, SOLENOID_ROLLERS_RETRACT, RIGHT_ROLLER_MOTOR, LEFT_ROLLER_MOTOR, rollerSpeed)
 		//autoLoopCounter(0),
 		//lastCurve(0)
 	{
@@ -294,7 +297,6 @@ private:
 				{
 					elevator.BrakeOn();
 					goingDown = false;
-					SmartDashboard::PutNumber("Stinky", elevatorLevel);
 				}
 			}
 		}
