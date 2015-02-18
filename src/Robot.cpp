@@ -29,7 +29,7 @@ typedef enum
 	LEFT_DRIVE_MOTOR, //2
 	ELEVATOR_MOTOR, //3
 	RIGHT_ROLLER_MOTOR, //4
-	RIGHT_DRIVE_MOTOR, //5
+	RIGHT_DRIVE_MOTOR //5
 //Add your drive-train motors to this enumeration, and have joeTalon(DRIVE_TRAIN_MOTOR)
 }VICTOR_CHANNEL;
 
@@ -45,15 +45,22 @@ AUTONOMOUS_OPTIONS autonOptions;
 
 typedef enum
 {
-	SOLENOID_CLAW_EXTEND,
-	SOLENOID_CLAW_RETRACT,
+	SOLENOID_DRIVE_SHIFT_EXTEND, //Gear shift up
+	SOLENOID_DRIVE_SHIFT_RETRACT, //Gear shift down
 	SOLENOID_ELEVATOR_EXTEND,
 	SOLENOID_ELEVATOR_RETRACT,
 	SOLENOID_ROLLERS_EXTEND,
 	SOLENOID_ROLLERS_RETRACT,
-	SOLENOID_ELEVATOR_BRAKE
+	SOLENOID_ELEVATOR_BRAKE_EXTEND, //Release brake
+	SOLENOID_ELEVATOR_BRAKE_RETRACT //Engage brake
+
 }SOLENOID_CHANNEL;
 
+typedef enum
+{
+	SOLENOID_CLAW_EXTEND, //These two are sketchy, what with being on the second PCM. -Ben 2/17/15
+	SOLENOID_CLAW_RETRACT
+}CLAW_SOLENOID_CHANNEL;
 
 
 class Robot: public IterativeRobot
@@ -66,9 +73,9 @@ class Robot: public IterativeRobot
 	Victor joeTalon;
 	Victor kaylaTalon;
 //	Victor loretta;  Rest in peace Loretta, you will be missed.
-//	Victor rhonda; Rest in peace Rhonda, you will be missed more.
-	Victor thing1;
-	Victor thing2;
+//	Victor rhonda; Rest in peace Rhonda, you will be missed more. Don't tell Loretta.
+//	Victor thing1;
+//	Victor thing2;
 //	Solenoid numanumamaticExtend;
 //	Solenoid numanumamaticRetract;
 	Solenoid shiftUpExtend;
@@ -93,7 +100,7 @@ class Robot: public IterativeRobot
 	bool rollersOpen = true;
 	bool numanumamaticIsPressed = false;
 	bool shiftUp = false;
-	float rollerSpeed = 0;
+	float rolyPolySpeed = 0;
 	bool override;
 	bool goingUp = false;
 	bool goingDown = false;
@@ -113,24 +120,25 @@ public:
 		kaylaTalon(RIGHT_DRIVE_MOTOR),
 //		loretta(9),
 //		rhonda(8),
-		thing1(5),
-		thing2(4),
+//		thing1(5),
+//		thing2(4),
 //		numanumamaticExtend(0),
 //		numanumamaticRetract(1),
-		shiftUpExtend(3),
-		shiftUpRetract(5),
+		shiftUpExtend(SOLENOID_DRIVE_SHIFT_EXTEND),
+		shiftUpRetract(SOLENOID_DRIVE_SHIFT_RETRACT),
 		rightEncoder(0, 1, true),
 		leftEncoder(2, 3, true),
 		clicker(0),
 		claws(SOLENOID_CLAW_EXTEND, SOLENOID_CLAW_RETRACT),
-		elevator(SOLENOID_ELEVATOR_EXTEND, SOLENOID_ELEVATOR_RETRACT, SOLENOID_ELEVATOR_BRAKE, ELEVATOR_MOTOR, ELEVATOR_ENCODER_A, ELEVATOR_ENCODER_B, LOWER_LEFT_LIMIT_SWITCH, LOWER_RIGHT_LIMIT_SWITCH, UPPER_LEFT_LIMIT_SWITCH, UPPER_RIGHT_LIMIT_SWITCH),
+		elevator(SOLENOID_ELEVATOR_EXTEND, SOLENOID_ELEVATOR_RETRACT, SOLENOID_ELEVATOR_BRAKE_EXTEND, SOLENOID_ELEVATOR_BRAKE_RETRACT, ELEVATOR_MOTOR, ELEVATOR_ENCODER_A, ELEVATOR_ENCODER_B, LOWER_LEFT_LIMIT_SWITCH, LOWER_RIGHT_LIMIT_SWITCH, UPPER_LEFT_LIMIT_SWITCH, UPPER_RIGHT_LIMIT_SWITCH),
 		compressor(5),
-		rollers(SOLENOID_ROLLERS_EXTEND, SOLENOID_ROLLERS_RETRACT, RIGHT_ROLLER_MOTOR, LEFT_ROLLER_MOTOR, rollerSpeed)
+		rollers(SOLENOID_ROLLERS_EXTEND, SOLENOID_ROLLERS_RETRACT, RIGHT_ROLLER_MOTOR, LEFT_ROLLER_MOTOR /* , rollerSpeed */)
 		//autoLoopCounter(0),
 		//lastCurve(0)
 	{
 		myRobot.SetExpiration(0.1);
 		SmartDashboard::init();
+		SmartDashboard::PutBoolean("High gear on?", shiftUpExtend.Get());
 	}
 
 private:
@@ -146,6 +154,8 @@ private:
 		autoLoopCounter = 0;
 		autonTimer.Reset();
 		autonTimer.Start();
+		shiftUpRetract.Set(true);
+		shiftUpExtend.Set(false);
 		compressor.Start();
 		rightEncoder.Reset();
 		leftEncoder.Reset();
@@ -203,6 +213,9 @@ private:
 	{
 		lastCurve = 1;
 		compressor.Start();
+		shiftUpRetract.Set(true);
+		shiftUpExtend.Set(false);
+
 	}
 
 	void TeleopDisabled()
@@ -215,9 +228,10 @@ private:
 		//double rightEncoderRate = rightEncoder.GetRate();
 		//double rightRPM = (rightEncoderRate/256) * 60;
 //		myRobot.ArcadeDrive(stick); // drive with arcade style (use right stick)
-
-		myRobot.ArcadeDrive(stick.GetRawAxis(1), 0.7 * stick.GetRawAxis(4)); //0.7 dampens the steering sensitivity, modify to taste
-//		//Drive don't do this, use arcade drive
+//		HAAAAAAAANNNNDDDDSSSS
+		myRobot.ArcadeDrive((stick.GetRawAxis(1)*0.5), stick.GetRawAxis(4)); //0.7 dampens the steering sensitivity, modify to taste
+		SmartDashboard::PutString("Do it work?!", "Aw yeah");
+		//Drive don't do this, use arcade drive
 //		if ((stick.GetRawAxis(1) < 0.1) && (stick.GetRawAxis(1) > -0.1))
 //		{
 //			joeTalon.SetSpeed(stick.GetRawAxis(4));
@@ -364,8 +378,7 @@ private:
 			rollers.CloseRollers();
 			//Call close rollers function
 		}
-
-		//Open Rollers
+		//Else Open Rollers
 		else if (stick.GetRawButton(5) == false && rollersOpen == false && override == false)
 		{
 			rollersOpen = true;
@@ -379,6 +392,7 @@ private:
 			shiftUp = true;
 			shiftUpExtend.Set(true);
 			shiftUpRetract.Set(false);
+			SmartDashboard::PutBoolean("High gear ON?", shiftUpExtend.Get());
 		}
 
 		//Shift Down Gear
@@ -392,8 +406,8 @@ private:
 		//Spin Rollers In
 		if (stick.GetRawAxis(2) >= 0.05)
 		{
-			rollerSpeed = (stick.GetRawAxis(2));
-			rollers.Eat();
+			rolyPolySpeed = (stick.GetRawAxis(2));
+			rollers.Eat(rolyPolySpeed);
 //			thing1.SetSpeed(stick.GetRawAxis(2));
 //			thing2.SetSpeed(-stick.GetRawAxis(2));
 		}
@@ -401,17 +415,17 @@ private:
 		//Spin Rollers Out
 		else if (stick.GetRawAxis(3) >= 0.05)
 		{
-			rollerSpeed = (stick.GetRawAxis(3));
-			rollers.Barf();
+			rolyPolySpeed = (stick.GetRawAxis(3));
+			rollers.Barf(rolyPolySpeed);
+//			SmartDashboard::Put
 //			thing1.SetSpeed(-stick.GetRawAxis(2));
 //			thing2.SetSpeed(stick.GetRawAxis(3));
 		}
-
 		//Stop Rollers
 		else
 		{
-//			thing2.SetSpeed(0.0);
-//			thing1.SetSpeed(0.0);
+			rolyPolySpeed = 0;
+			rollers.Eat(rolyPolySpeed);
 		}
 
 
@@ -456,8 +470,6 @@ private:
 //			{
 //				numanumamaticIsPressed = false;
 //			}
-
-		SmartDashboard::PutString("DB/String0", "Pooping");
 
 	}
 
@@ -583,6 +595,106 @@ private:
 	{
 
 	}
+
+	/**
+	 * void AutonSuperJoe(void)
+    {
+        switch (autoStepCounter)
+        {
+
+        case 0:
+        	if (autonTimer < 2)
+        	{
+        		if (clawOpen == true)
+        		{
+					claws.CloseClaw();
+					clawOpen = false
+
+					elevator.SetLevel(1);
+				}
+
+				if (elevator.IsAtLevel() == true)
+				{
+					elevator.BrakeOn();
+				}
+			}
+
+            if (autonReset)
+            {
+                autonDrivingForward.Reset();
+                autonDrivingForward.Start();
+            }
+            myRobot.Drive(0.0,0.0);
+            if (autonDrivingForward.Get() >=  0.2)
+            {
+                autonReset = true;
+                autonStepCount++;
+            }
+            else
+            {
+                autonReset = false;
+            }
+            break;
+        case 1:
+            if (AutonomousShoot(6,true,autonReset, 1.5) == true)
+            {
+                autonReset = true;
+                autonStepCount++;
+            }
+            else
+            {
+                autonReset = false;
+            }
+            break;
+
+        case 2:
+            robotClimberExtend.Set(true);
+            robotClimberRetract.Set(false);
+            if (autonReset)
+            {
+                autonDrivingForward.Reset();
+                autonDrivingForward.Start();
+            }
+            myRobot.Drive(0.0,0.0);
+            if (autonDrivingForward.Get() >=  0.2)
+            {
+                autonReset = true;
+                autonStepCount++;
+            }
+            else
+            {
+                autonReset = false;
+            }
+            break;
+        case 3:
+            collector.LeaveStartingPosition();
+
+            robotClimberExtend.Set(false);
+            robotClimberRetract.Set(true);
+
+            if (AutonomousLowerCollector() == true)
+            {
+                autonReset = true;
+                autonStepCount++;
+            }
+            else
+            {
+                autonReset = false;
+            }
+            break;
+        case 4:
+            driverStationLCD->PrintfLine((DriverStationLCD::Line) 3, "Time: %f", timeInAutonomous.Get());
+            timeInAutonomous.Stop();
+            autonReset = true;
+            autonStepCount++;
+            break;
+        case 5:
+            autonReset = true;
+            break;
+        }
+    }
+	 */
+
 };
 
 START_ROBOT_CLASS(Robot);

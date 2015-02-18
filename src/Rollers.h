@@ -16,16 +16,16 @@ private:
 	Solenoid rollersClose;
 	Victor rollerPolarRight;
 	Victor rollerPolarLeft;
-	float rollerSpeed;
+//	float rollerSpeed;
 
 public:
-Rollers(int rollers_extend, int rollers_retract, int roller_right_motor, int roller_left_motor, float roller_speed);
+Rollers(int rollers_extend, int rollers_retract, int roller_right_motor, int roller_left_motor/* , float roller_speed */);
 void OpenRollers();
 void CloseRollers();
-void Eat();
-void Barf();
-void PushRight();
-void PushLeft();
+void Eat(float rollerSpeed);
+void Barf(float rollerSpeed);
+void PushRight(float rollerSpeed);
+void PushLeft(float rollerSpeed);
 
 };
 

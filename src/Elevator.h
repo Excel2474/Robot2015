@@ -25,7 +25,8 @@ class Elevator : public IterativeRobot
 private:
 	Solenoid elevatorExtend;
 	Solenoid elevatorRetract;
-	Solenoid elevatorBrake;
+	Solenoid elevatorBrakeExtend;
+	Solenoid elevatorBrakeRetract;
 	Victor elevatorMotor;
 	Encoder elevatorEncoder;
 	DigitalInput leftLowerLimit;
@@ -34,12 +35,13 @@ private:
 	DigitalInput rightUpperLimit;
 	// = new DigitalInput(0)
 	int destinationLevel;
+	int destinationFloor;
 
 	PIDController elevatorPid;
 
 public: //Elevator Extend
 
-	Elevator(int elevator_extend, int elevator_retract, int elevator_brake, int elevator_motor, int elevator_encoder_A, int elevator_encoder_B, int lower_left_limit, int lower_right_limit, int upper_left_limit, int upper_right_limit);
+	Elevator(int elevator_extend, int elevator_retract, int elevator_brake_extend, int elevator_brake_retract, int elevator_motor, int elevator_encoder_A, int elevator_encoder_B, int lower_left_limit, int lower_right_limit, int upper_left_limit, int upper_right_limit);
 	void ExtendElevator();
 	void RetractElevator();
 	void Execute();
