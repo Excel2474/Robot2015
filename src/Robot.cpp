@@ -2,6 +2,7 @@
 #include "Claw.h"
 #include "Elevator.h"
 #include "Rollers.h"
+#include "Donuts.h"
 
 #define DRIVEWHEEL_CIRCUMFERENCE 18.8495559215 //In inches, given 6-wheels
 //Robot drives 18.8495559215 inches/rotation
@@ -87,7 +88,7 @@ class Robot: public IterativeRobot
 	bool curvyWurvy = false;
 	bool extended = false;
 	bool clawOpen = false;
-	bool elevatorExtended = false;
+	bool elevatorExtended;
 	bool dropRoutineStarted = false;
 	bool dropRoutineFinished = true;
 	bool droveStraight = true;
@@ -215,6 +216,7 @@ private:
 		compressor.Start();
 		shiftUpRetract.Set(true);
 		shiftUpExtend.Set(false);
+		elevatorExtended = false;
 
 	}
 
@@ -229,7 +231,7 @@ private:
 		//double rightRPM = (rightEncoderRate/256) * 60;
 //		myRobot.ArcadeDrive(stick); // drive with arcade style (use right stick)
 //		HAAAAAAAANNNNDDDDSSSS
-		myRobot.ArcadeDrive((stick.GetRawAxis(1)*0.5), stick.GetRawAxis(4)); //0.7 dampens the steering sensitivity, modify to taste
+		myRobot.ArcadeDrive((stick.GetRawAxis(1) * 1.0), (stick.GetRawAxis(4) * 1.0)); //0.7 dampens the steering sensitivity, modify to taste
 		SmartDashboard::PutString("Do it work?!", "Aw yeah");
 		//Drive don't do this, use arcade drive
 //		if ((stick.GetRawAxis(1) < 0.1) && (stick.GetRawAxis(1) > -0.1))
