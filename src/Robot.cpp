@@ -87,7 +87,7 @@ class Robot: public IterativeRobot
 	float lastCurve = 0;
 	bool curvyWurvy = false;
 	bool extended = false;
-	bool clawOpen = false;
+	bool clawOpen = true;
 	bool elevatorExtended;
 	bool dropRoutineStarted = false;
 	bool dropRoutineFinished = true;
@@ -539,52 +539,121 @@ private:
 	void AutonTwo(void) //Grasps a yellow tote, turns, drives into the Auto Zone, and goes and sets it on the Landmark
 	{
 		//For now, we'll code this in regards to starting at the middle yellow tote
+		switch (autoLoopCounter)
+		{
 
+		case 0:
+			if (autonTimer.Get() < 2)
+			{
+				if (clawOpen == true)
+				{
+					claws.CloseClaw();
+					clawOpen = false;
 
-		if (autonTimer.Get() <= 2) //GUESSED TIME
-		{
-			claws.CloseClaw();
-			elevator.SetLevel(1);
-			if (elevator.IsAtLevel() == true)
-			{
-				elevator.BrakeOn();
+					elevator.BrakeOff();
+					elevator.SetLevel(4);
+				}
+
+				if (elevator.IsAtLevel() == true)
+				{
+					elevator.BrakeOn();
+				}
 			}
-		}
-		if (autonTimer.Get() > 2 && autonTimer.Get() <= 3) //GUESSED TIMES
-		{
-			Auto_DriveStraightDistance(3, -1.0);
-		}
-		//^^^vvv We could probably combine these two movements: moving back and turning towards the auto zone. -Ben
-		if (autonTimer.Get() > 3 && autonTimer.Get() <= 5) //GUESSED TIMES
-		{
-			Auto_ZeroPointTurn(90, 1.0);
-		}
-		if (autonTimer.Get() > 5 && autonTimer.Get() <= 9) //GUESSED TIMES
-		{
-			Auto_DriveStraightDistance(107, 1.0);
-		}
-		if (autonTimer.Get() > 9 && autonTimer.Get() <= 11) //GUESSED TIMES
-		{
-			Auto_ZeroPointTurn(-90, 1.0);
-		}
-		//^^^vvv Same here. We could combine these.
-		if (autonTimer.Get() > 11 && autonTimer.Get() <= 12) //GUESSED TIMES
-		{
-			Auto_DriveStraightDistance(24, 1.0);
-		}
-		if (autonTimer.Get() > 12 && autonTimer.Get() <= 14) //GUESSED TIMES
-		{
-			elevator.BrakeOff();
-			elevator.SetLevel(0);
-			if (elevator.IsAtLevel() == true)
+			else
 			{
-				elevator.BrakeOn();
-				claws.OpenClaw();
+				autoLoopCounter++;
+				autonTimer.Reset();
 			}
-		}
-		if (autonTimer.Get() > 14)
-		{
-			Auto_DriveStraightDistance(36, -1.0);
+			break;
+	//			Do we need to use implement something like this Joe Code vvv for anything?
+	//            if (autonReset)
+	//            {
+	//                autonDrivingForward.Reset();
+	//                autonDrivingForward.Start();
+	//            }
+	//            myRobot.Drive(0.0,0.0);
+	//            if (autonDrivingForward.Get() >=  0.2)
+	//            {
+	//                autonReset = true;
+	//                autonStepCount++;
+	//            }
+		case 1:
+			if (autonTimer.Get() < 2)
+			{
+				Auto_ZeroPointTurn(90, .6);
+			}
+			else
+			{
+				autoLoopCounter++;
+				autonTimer.Reset();
+			}
+			break;
+
+		case 2:
+			if (autonTimer.Get() < 4)
+			{
+				Auto_DriveStraightDistance(107, 1.0);
+			}
+			else
+			{
+				autoLoopCounter++;
+				autonTimer.Reset();
+			}
+			break;
+		case 3:
+			if (autonTimer.Get() < 2)
+			{
+				Auto_ZeroPointTurn(-90, .6);
+			}
+			else
+			{
+				autoLoopCounter++;
+				autonTimer.Reset();
+			}
+			break;
+		case 4:
+			if (autonTimer.Get() < 2)
+			{
+				Auto_DriveStraightDistance(24, 1.0);
+			}
+			else
+			{
+				autoLoopCounter++;
+				autonTimer.Reset();
+			}
+			break;
+		case 5:
+			if (autonTimer.Get() < 2)
+			{
+				elevator.BrakeOff();
+				elevator.SetLevel(0);
+				if (elevator.IsAtLevel() == true)
+				{
+					elevator.BrakeOn();
+					claws.OpenClaw();
+					clawOpen = true;
+				}
+			}
+			else
+			{
+				autoLoopCounter++;
+				autonTimer.Reset();
+			}
+			break;
+		case 6:
+			if (autonTimer.Get() < 3)
+			{
+				Auto_DriveStraightDistance(36, -1.0);
+			}
+			else
+			{
+				autoLoopCounter++;
+				autonTimer.Reset();
+			}
+			break;
+		case 7:
+			myRobot.Drive(0, 0);
+			break;
 		}
 	}
 
@@ -597,105 +666,6 @@ private:
 	{
 
 	}
-
-	/**
-	 * void AutonSuperJoe(void)
-    {
-        switch (autoStepCounter)
-        {
-
-        case 0:
-        	if (autonTimer < 2)
-        	{
-        		if (clawOpen == true)
-        		{
-					claws.CloseClaw();
-					clawOpen = false
-
-					elevator.SetLevel(1);
-				}
-
-				if (elevator.IsAtLevel() == true)
-				{
-					elevator.BrakeOn();
-				}
-			}
-
-            if (autonReset)
-            {
-                autonDrivingForward.Reset();
-                autonDrivingForward.Start();
-            }
-            myRobot.Drive(0.0,0.0);
-            if (autonDrivingForward.Get() >=  0.2)
-            {
-                autonReset = true;
-                autonStepCount++;
-            }
-            else
-            {
-                autonReset = false;
-            }
-            break;
-        case 1:
-            if (AutonomousShoot(6,true,autonReset, 1.5) == true)
-            {
-                autonReset = true;
-                autonStepCount++;
-            }
-            else
-            {
-                autonReset = false;
-            }
-            break;
-
-        case 2:
-            robotClimberExtend.Set(true);
-            robotClimberRetract.Set(false);
-            if (autonReset)
-            {
-                autonDrivingForward.Reset();
-                autonDrivingForward.Start();
-            }
-            myRobot.Drive(0.0,0.0);
-            if (autonDrivingForward.Get() >=  0.2)
-            {
-                autonReset = true;
-                autonStepCount++;
-            }
-            else
-            {
-                autonReset = false;
-            }
-            break;
-        case 3:
-            collector.LeaveStartingPosition();
-
-            robotClimberExtend.Set(false);
-            robotClimberRetract.Set(true);
-
-            if (AutonomousLowerCollector() == true)
-            {
-                autonReset = true;
-                autonStepCount++;
-            }
-            else
-            {
-                autonReset = false;
-            }
-            break;
-        case 4:
-            driverStationLCD->PrintfLine((DriverStationLCD::Line) 3, "Time: %f", timeInAutonomous.Get());
-            timeInAutonomous.Stop();
-            autonReset = true;
-            autonStepCount++;
-            break;
-        case 5:
-            autonReset = true;
-            break;
-        }
-    }
-	 */
 
 };
 
