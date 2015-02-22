@@ -51,3 +51,9 @@ void Rollers::PushLeft(float rollerSpeed)
 	rollerPolarRight.SetSpeed(-rollerSpeed);
 	rollerPolarLeft.SetSpeed(rollerSpeed);
 }
+
+void Rollers::RollersIdle()
+{
+	rollerPolarRight.SetSpeed(0);
+	rollerPolarLeft.SetSpeed(0);
+}

@@ -26,6 +26,7 @@ void Eat(float rollerSpeed);
 void Barf(float rollerSpeed);
 void PushRight(float rollerSpeed);
 void PushLeft(float rollerSpeed);
+void RollersIdle();
 
 };
 

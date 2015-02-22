@@ -111,6 +111,7 @@ class Robot: public IterativeRobot
 	Elevator elevator;
 	Compressor compressor;
 	Rollers rollers;
+	Gyro gyro1;
 
 public:
 	Robot() :
@@ -133,7 +134,8 @@ public:
 		claws(SOLENOID_CLAW_EXTEND, SOLENOID_CLAW_RETRACT),
 		elevator(SOLENOID_ELEVATOR_EXTEND, SOLENOID_ELEVATOR_RETRACT, SOLENOID_ELEVATOR_BRAKE_EXTEND, SOLENOID_ELEVATOR_BRAKE_RETRACT, ELEVATOR_MOTOR, ELEVATOR_ENCODER_A, ELEVATOR_ENCODER_B, LOWER_LEFT_LIMIT_SWITCH, LOWER_RIGHT_LIMIT_SWITCH, UPPER_LEFT_LIMIT_SWITCH, UPPER_RIGHT_LIMIT_SWITCH),
 		compressor(5),
-		rollers(SOLENOID_ROLLERS_EXTEND, SOLENOID_ROLLERS_RETRACT, RIGHT_ROLLER_MOTOR, LEFT_ROLLER_MOTOR /* , rollerSpeed */)
+		rollers(SOLENOID_ROLLERS_EXTEND, SOLENOID_ROLLERS_RETRACT, RIGHT_ROLLER_MOTOR, LEFT_ROLLER_MOTOR /* , rollerSpeed */),
+		gyro1(9)
 		//autoLoopCounter(0),
 		//lastCurve(0)
 	{
@@ -160,10 +162,13 @@ private:
 		compressor.Start();
 		rightEncoder.Reset();
 		leftEncoder.Reset();
+		gyro1.Reset();
 	}
 
 	void AutonomousPeriodic()
 	{
+
+
 		switch (autonOptions)
 		{
 		case AUTONOMOUS_ONE:
@@ -591,6 +596,215 @@ private:
 	void AutonThree(void)
 	{
 
+		float gyro_angle = gyro1.GetAngle();
+		switch (autoLoopCounter)
+		{
+		case 0:
+			if (autonTimer.Get() < 2)
+			{
+				claws.CloseClaw();
+				rollers.Eat(0.7);
+			}
+			else
+			{
+				autoLoopCounter++;
+				autonTimer.Reset();
+			}
+			break;
+		case 1:
+			if (autonTimer.Get() < 2)
+			{
+				elevator.SetLevel(0);
+				rollers.OpenRollers();
+				rollers.RollersIdle();
+			}
+			else
+			{
+				autoLoopCounter++;
+				autonTimer.Reset();
+			}
+			break;
+		case 2:
+			if (autonTimer.Get() < 2)
+			{
+				elevator.SetLevel(2);
+				rollers.PushLeft(0.7);
+				Auto_DriveStraightDistance(6, 0.3);
+			}
+			else
+			{
+				Auto_DriveStraightDistance(0, 0.0);
+				autoLoopCounter++;
+				autonTimer.Reset();
+			}
+			break;
+		case 3:
+			if (autonTimer.Get() < 2)
+			{
+				Auto_DriveStraightDistance(57, 0.8);
+				myRobot.Drive(0.8, 0.0);
+				rollers.Eat(0.7);
+			}
+			else
+			{
+				Auto_DriveStraightDistance(0, 0.0);
+				autoLoopCounter++;
+				autonTimer.Reset();
+			}
+			break;
+		case 4:
+			if (autonTimer.Get() < 2)
+			{
+				myRobot.Drive(0, 0);
+				rollers.CloseRollers();
+				rollers.Eat(0.5);
+			}
+			else
+			{
+				autoLoopCounter++;
+				autonTimer.Reset();
+			}
+			break;
+		case 5:
+			if (autonTimer.Get() < 2)
+			{
+				elevator.SetLevel(0);
+				rollers.OpenRollers();
+				rollers.RollersIdle();
+			}
+			else
+			{
+				autoLoopCounter++;
+				autonTimer.Reset();
+			}
+			break;
+		case 6:
+			if (autonTimer.Get() < 2)
+			{
+				elevator.SetLevel(2);
+				rollers.PushLeft(0.7);
+				Auto_DriveStraightDistance(6, 0.3);
+			}
+			else
+			{
+				autoLoopCounter++;
+				autonTimer.Reset();
+			}
+			break;
+		case 7:
+			if (autonTimer.Get() < 2)
+			{
+				Auto_DriveStraightDistance(57, 0.8);
+				rollers.Eat(0.7);
+			}
+			else
+			{
+				Auto_DriveStraightDistance(0, 0.0);
+				autoLoopCounter++;
+				autonTimer.Reset();
+			}
+			break;
+		case 8:
+			if (autonTimer.Get() < 2)
+			{
+				myRobot.Drive(0, 0);
+				rollers.CloseRollers();
+				rollers.Eat(0.5);
+			}
+			else
+			{
+				autoLoopCounter++;
+				autonTimer.Reset();
+			}
+			break;
+		case 9:
+			if (autonTimer.Get() < 2)
+			{
+				elevator.SetLevel(0);
+				rollers.OpenRollers();
+				rollers.RollersIdle();
+			}
+			else
+			{
+				autoLoopCounter++;
+				autonTimer.Reset();
+			}
+			break;
+		case 10:
+			if (autonTimer.Get() < 2)
+			{
+				elevator.SetLevel(2);
+				if (gyro_angle < 90 || gyro_angle < -90)
+				{
+					myRobot.Drive(0.0, 0.5);
+				}
+				else if (gyro_angle == 90 || gyro_angle == -90)
+				{
+					myRobot.Drive(0.0, 0.0);
+				}
+			}
+			else
+			{
+				autoLoopCounter++;
+				autonTimer.Reset();
+			}
+			break;
+		case 11:
+			if (autonTimer.Get() < 2)
+			{
+				Auto_DriveStraightDistance(65, 0.8);
+			}
+			else
+			{
+				Auto_DriveStraightDistance(0, 0.0);
+				autoLoopCounter++;
+				autonTimer.Reset();
+
+			}
+			break;
+		case 12:
+			if (autonTimer.Get() < 2)
+			{
+				if (gyro_angle < 180 || gyro_angle < -180)
+				{
+					myRobot.Drive(0.0, 0.5);
+				}
+				else if (gyro_angle == 180 || gyro_angle == -180)
+				{
+					myRobot.Drive(0.0, 0.0);
+				}
+			}
+			else
+			{
+				autoLoopCounter++;
+				autonTimer.Reset();
+			}
+			break;
+		case 13:
+			if (autonTimer.Get() < 2)
+			{
+				rollers.OpenRollers();
+				elevator.SetLevel(0);
+			}
+			else
+			{
+				autoLoopCounter++;
+				autonTimer.Reset();
+			}
+			break;
+		case 14:
+			if (autonTimer.Get() < 2)
+			{
+				Auto_DriveStraightDistance(-57, 0.8);
+				rollers.Barf(0.7);
+			}
+			else
+			{
+				autoLoopCounter++;
+				autonTimer.Reset();
+			}
+			break;
+		}
 	}
 
 	void AutonFour(void)
