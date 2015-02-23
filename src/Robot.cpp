@@ -39,7 +39,8 @@ typedef enum
 	AUTONOMOUS_ONE,
 	AUTONOMOUS_TWO,
 	AUTONOMOUS_THREE,
-	AUTONOMOUS_FOUR
+	AUTONOMOUS_FOUR,
+	AUTONOMOUS_FIVE
 }AUTONOMOUS_OPTIONS;
 
 AUTONOMOUS_OPTIONS autonOptions;
@@ -93,6 +94,7 @@ class Robot: public IterativeRobot
 	bool dropRoutineFinished = true;
 	bool droveStraight = true;
 	bool turnt = true;
+	//bool gyroReset = false;
 	int autoLoopCounter = 0;
 	int elevatorLevel = 1;
 	int encoderCountNow = 0;
@@ -182,6 +184,9 @@ private:
 			break;
 		case AUTONOMOUS_FOUR:
 			AutonFour();
+			break;
+		case AUTONOMOUS_FIVE:
+			AutonFive();
 			break;
 		}
 
@@ -511,6 +516,18 @@ private:
 	void Auto_ZeroPointTurn(float degrees, float speed)
 	{
 		//TODO: figure out rotations/degree for the drive wheels when both sides are moving opposite directions (i.e. stationary turning)
+		//TODO edit: I do believe that we can do this with gyro code which is pretty simple.
+
+		gyro1.Reset();
+
+		if (gyro1.GetAngle() != degrees || gyro1.GetAngle() != (degrees + 1) ||gyro1.GetAngle() != (degrees - 1))
+		{
+			myRobot.Drive(0.0, speed);
+		}
+		else
+		{
+			myRobot.Drive(0.0, 0.0);
+		}
 
 		/**
 		if (turnt == true)
@@ -533,7 +550,7 @@ private:
 
 	//Autonomous functions zone end
 
-	void AutonOne(void) //Drives forward.
+	void AutonOne(void) //Drives forward. Could push tote/container
 	{
 		if (autonTimer.Get() < 10) //10 seconds is more than enough. We just don't yet know how long it will take for the robot to drive however far forward. This is how we're going to sequence autonomous stuff: giving functions set completion times. -Ben
 		{
@@ -585,7 +602,7 @@ private:
 		case 1:
 			if (autonTimer.Get() < 2)
 			{
-				Auto_ZeroPointTurn(90, .6);
+				Auto_ZeroPointTurn(90, 0.6);
 			}
 			else
 			{
@@ -608,7 +625,7 @@ private:
 		case 3:
 			if (autonTimer.Get() < 2)
 			{
-				Auto_ZeroPointTurn(-90, .6);
+				Auto_ZeroPointTurn(-90, 0.6);
 			}
 			else
 			{
@@ -662,7 +679,7 @@ private:
 		}
 	}
 
-	void AutonThree(void)
+	void AutonThree(void)  //Three tote stack autonomous
 	{
 
 		float gyro_angle = gyro1.GetAngle();
@@ -683,6 +700,7 @@ private:
 		case 1:
 			if (autonTimer.Get() < 2)
 			{
+				elevator.BrakeOff();
 				elevator.SetLevel(0);
 				rollers.OpenRollers();
 				rollers.RollersIdle();
@@ -696,6 +714,7 @@ private:
 		case 2:
 			if (autonTimer.Get() < 2)
 			{
+				elevator.BrakeOn();
 				elevator.SetLevel(2);
 				rollers.PushLeft(0.7);
 				Auto_DriveStraightDistance(6, 0.3);
@@ -737,6 +756,7 @@ private:
 		case 5:
 			if (autonTimer.Get() < 2)
 			{
+				elevator.BrakeOff();
 				elevator.SetLevel(0);
 				rollers.OpenRollers();
 				rollers.RollersIdle();
@@ -750,6 +770,7 @@ private:
 		case 6:
 			if (autonTimer.Get() < 2)
 			{
+				elevator.BrakeOn();
 				elevator.SetLevel(2);
 				rollers.PushLeft(0.7);
 				Auto_DriveStraightDistance(6, 0.3);
@@ -789,6 +810,7 @@ private:
 		case 9:
 			if (autonTimer.Get() < 2)
 			{
+				elevator.BrakeOff();
 				elevator.SetLevel(0);
 				rollers.OpenRollers();
 				rollers.RollersIdle();
@@ -802,15 +824,17 @@ private:
 		case 10:
 			if (autonTimer.Get() < 2)
 			{
-				elevator.SetLevel(2);
-				if (gyro_angle < 90 || gyro_angle < -90)
-				{
-					myRobot.Drive(0.0, 0.5);
-				}
-				else if (gyro_angle == 90 || gyro_angle == -90)
-				{
-					myRobot.Drive(0.0, 0.0);
-				}
+				elevator.BrakeOn();
+				elevator.SetLevel(1);
+				Auto_ZeroPointTurn(90, 0.5);
+//				if (gyro_angle < 90 || gyro_angle < -90)
+//				{
+//					myRobot.Drive(0.0, 0.5);
+//				}
+//				else if (gyro_angle == 90 || gyro_angle == -90)
+//				{
+//					myRobot.Drive(0.0, 0.0);
+//				}
 			}
 			else
 			{
@@ -834,14 +858,15 @@ private:
 		case 12:
 			if (autonTimer.Get() < 2)
 			{
-				if (gyro_angle < 180 || gyro_angle < -180)
-				{
-					myRobot.Drive(0.0, 0.5);
-				}
-				else if (gyro_angle == 180 || gyro_angle == -180)
-				{
-					myRobot.Drive(0.0, 0.0);
-				}
+				Auto_ZeroPointTurn(90, 0.5);
+//				if (gyro_angle < 180 || gyro_angle < -180)
+//				{
+//					myRobot.Drive(0.0, 0.5);
+//				}
+//				else if (gyro_angle == 180 || gyro_angle == -180)
+//				{
+//					myRobot.Drive(0.0, 0.0);
+//				}
 			}
 			else
 			{
@@ -852,6 +877,7 @@ private:
 		case 13:
 			if (autonTimer.Get() < 2)
 			{
+				elevator.BrakeOff();
 				rollers.OpenRollers();
 				elevator.SetLevel(0);
 			}
@@ -864,7 +890,8 @@ private:
 		case 14:
 			if (autonTimer.Get() < 2)
 			{
-				Auto_DriveStraightDistance(-57, 0.8);
+				rollers.CloseRollers();
+				Auto_DriveStraightDistance(57, -0.8);
 				rollers.Barf(0.7);
 			}
 			else
@@ -876,10 +903,59 @@ private:
 		}
 	}
 
-	void AutonFour(void)
+	void AutonFour(void) //Grabs 2 containers off the step TODO: need to figure out how hooks work so we can program them
 	{
-
+		switch (autoLoopCounter)
+		{
+		case 0:
+			if (autonTimer.Get() < 2)
+			{
+				Auto_DriveStraightDistance(48, 0.5);
+			}
+			else
+			{
+				autoLoopCounter++;
+				autonTimer.Reset();
+			}
+			break;
+		case 1:
+			if (autonTimer.Get() < 2)
+			{
+				Auto_DriveStraightDistance(0, 0.0);
+				// do hooky stuff
+			}
+			else
+			{
+				autoLoopCounter++;
+				autonTimer.Reset();
+			}
+			break;
+		case 2:
+			if (autonTimer.Get() < 2)
+			{
+				Auto_DriveStraightDistance(68, -0.5);
+			}
+			else
+			{
+				autoLoopCounter++;
+				autonTimer.Reset();
+			}
+			break;
+		}
 	}
+
+	void AutonFive(void) //
+	{
+		switch (autoLoopCounter)
+		{
+		case 0:
+			if (autonTimer.Get() < 2)
+			{
+
+			}
+		}
+	}
+
 
 };
 
