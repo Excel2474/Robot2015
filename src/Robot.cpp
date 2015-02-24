@@ -103,11 +103,13 @@ class Robot: public IterativeRobot
 	int elevatorLevel = 1;
 	int encoderCountNow = 0;
 	int encoderCountPrev = 0;
+	float rolyPolySpeed = 0;
+	float kaylaSmart = 0;
+	float joeSmart = 0;
 	bool yReleased;
 	bool rollersOpen = true;
 	bool numanumamaticIsPressed = false;
 	bool shiftUp = false;
-	float rolyPolySpeed = 0;
 	bool override;
 	bool goingUp = false;
 	bool goingDown = false;
@@ -148,6 +150,8 @@ public:
 		myRobot.SetExpiration(0.1);
 		SmartDashboard::init();
 		SmartDashboard::PutBoolean("High gear on?", shiftUpExtend.Get());
+		SmartDashboard::GetBoolean("Left Motor - Max Percentage SET", 0);
+		SmartDashboard::GetBoolean("Right Motor - Max Percentage SET", 0);
 	}
 
 private:
@@ -158,6 +162,8 @@ private:
 		mendableBruiser->AddDefault("Choose Your Autonomous!", typedef enum autonOptions.work);
 		goingUp = false;
 		goingDown = false;
+		joeSmart = SmartDashboard::GetBoolean("Left Motor - Max Percentage SET", 0);
+		kaylaSmart = SmartDashboard::GetBoolean("Right Motor - Max Percentage SET", 0);
 	}
 
 	void AutonomousInit()
@@ -248,8 +254,15 @@ private:
 		//double rightRPM = (rightEncoderRate/256) * 60;
 //		myRobot.ArcadeDrive(stick); // drive with arcade style (use right stick)
 //		HAAAAAAAANNNNDDDDSSSS
-		myRobot.ArcadeDrive((stick.GetRawAxis(1) * 1.0), (stick.GetRawAxis(4) * 1.0)); //0.7 dampens the steering sensitivity, modify to taste
+		joeSmart = SmartDashboard::GetBoolean("Left Motor - Max Percentage SET", 0);
+		kaylaSmart = SmartDashboard::GetBoolean("Right Motor - Max Percentage SET", 0);
+		if ((stick.GetRawAxis(4) < -0.1 || stick.GetRawAxis(4) > 0.1) || (stick.GetRawAxis(1) < -0.1 || stick.GetRawAxis(1) > 0.1))
+		{
+			myRobot.ArcadeDrive((stick.GetRawAxis(4) * 0.4), (stick.GetRawAxis(1) * 0.4)); //0.7 dampens the steering sensitivity, modify to taste
+		}
 		SmartDashboard::PutString("Do it work?!", "Aw yeah");
+		SmartDashboard::PutNumber("Left Side Speed", joeTalon.Get());
+		SmartDashboard::PutNumber("Right Side Speed", kaylaTalon.Get());
 		//Drive don't do this, use arcade drive
 //		if ((stick.GetRawAxis(1) < 0.1) && (stick.GetRawAxis(1) > -0.1))
 //		{
