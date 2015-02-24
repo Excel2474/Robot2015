@@ -15,8 +15,11 @@ typedef enum
 {
 	ELEVATOR_ENCODER_A,
 	ELEVATOR_ENCODER_B,
-	RIGHT_ENCODER,
-	LEFT_ENCODER,
+	RIGHT_ENCODER_A,
+	RIGHT_ENCODER_B,
+	LEFT_ENCODER_A,
+	LEFT_ENCODER_B,
+	GYRO,
 	LOWER_LEFT_LIMIT_SWITCH,
 	LOWER_RIGHT_LIMIT_SWITCH,
 	UPPER_LEFT_LIMIT_SWITCH,
@@ -36,10 +39,10 @@ typedef enum
 
 typedef enum
 {
-	AUTONOMOUS_ONE,
-	AUTONOMOUS_TWO,
-	AUTONOMOUS_THREE,
-	AUTONOMOUS_FOUR,
+	AUTONOMOUS_JUST_DRIVE,
+	AUTONOMOUS_SINGLE_TOTE,
+	AUTONOMOUS_THREE_TOTE_STACK,
+	AUTONOMOUS_TWO_CONTAINERS,
 	AUTONOMOUS_FIVE
 }AUTONOMOUS_OPTIONS;
 
@@ -72,6 +75,7 @@ class Robot: public IterativeRobot
 	//SmartDashboard driverDashboard;
 
 	LiveWindow *lw;
+	SendableChooser *mendableBruiser;
 	Victor joeTalon;
 	Victor kaylaTalon;
 //	Victor loretta;  Rest in peace Loretta, you will be missed.
@@ -130,14 +134,14 @@ public:
 //		numanumamaticRetract(1),
 		shiftUpExtend(SOLENOID_DRIVE_SHIFT_EXTEND),
 		shiftUpRetract(SOLENOID_DRIVE_SHIFT_RETRACT),
-		rightEncoder(0, 1, true),
-		leftEncoder(2, 3, true),
+		rightEncoder(RIGHT_ENCODER_A, RIGHT_ENCODER_B, true),
+		leftEncoder(LEFT_ENCODER_A, LEFT_ENCODER_B, true),
 		clicker(0),
 		claws(SOLENOID_CLAW_EXTEND, SOLENOID_CLAW_RETRACT),
 		elevator(SOLENOID_ELEVATOR_EXTEND, SOLENOID_ELEVATOR_RETRACT, SOLENOID_ELEVATOR_BRAKE_EXTEND, SOLENOID_ELEVATOR_BRAKE_RETRACT, ELEVATOR_MOTOR, ELEVATOR_ENCODER_A, ELEVATOR_ENCODER_B, LOWER_LEFT_LIMIT_SWITCH, LOWER_RIGHT_LIMIT_SWITCH, UPPER_LEFT_LIMIT_SWITCH, UPPER_RIGHT_LIMIT_SWITCH),
 		compressor(5),
 		rollers(SOLENOID_ROLLERS_EXTEND, SOLENOID_ROLLERS_RETRACT, RIGHT_ROLLER_MOTOR, LEFT_ROLLER_MOTOR /* , rollerSpeed */),
-		gyro1(9)
+		gyro1(GYRO)
 		//autoLoopCounter(0),
 		//lastCurve(0)
 	{
@@ -150,6 +154,8 @@ private:
 	void RobotInit()
 	{
 		lw = LiveWindow::GetInstance();
+		mendableBruiser = new SendableChooser();
+		mendableBruiser->AddDefault("Choose Your Autonomous!", typedef enum autonOptions.work);
 		goingUp = false;
 		goingDown = false;
 	}
@@ -170,20 +176,21 @@ private:
 	void AutonomousPeriodic()
 	{
 
+		SmartDashboard::PutString("Choose an Autonomous!", "autonOptions");
 
 		switch (autonOptions)
 		{
-		case AUTONOMOUS_ONE:
-			AutonOne();
+		case AUTONOMOUS_JUST_DRIVE:
+			AutonJustDrive();
 			break;
-		case AUTONOMOUS_TWO:
-			AutonTwo();
+		case AUTONOMOUS_SINGLE_TOTE:
+			AutonSingleTote();
 			break;
-		case AUTONOMOUS_THREE:
-			AutonThree();
+		case AUTONOMOUS_THREE_TOTE_STACK:
+			AutonThreeTote();
 			break;
-		case AUTONOMOUS_FOUR:
-			AutonFour();
+		case AUTONOMOUS_TWO_CONTAINERS:
+			AutonTwoContainers();
 			break;
 		case AUTONOMOUS_FIVE:
 			AutonFive();
@@ -493,7 +500,7 @@ private:
 
 	//Autonomous functions zone start
 
-	void Auto_DriveStraightDistance(float distance, float speed) //distance in inches
+	void Auto_DriveStraightForwardDistance(float distance, float speed) //distance in inches
 	{
 		rightEncoder.Reset();
 		leftEncoder.Reset();
@@ -511,8 +518,32 @@ private:
 		{
 			myRobot.Drive(0.0, 0.0);
 			droveStraight = true;
+			return;
 		}
 	}
+
+	void Auto_DriveStraightBackwardDistance(float distance, float speed) //distance in inches
+		{
+			rightEncoder.Reset();
+			leftEncoder.Reset();
+	//		if(droveStraight == true)
+	//		{
+	//			rightEncoder.Reset();
+	//			leftEncoder.Reset();
+	//			droveStraight = false;
+	//		}
+			if (rightEncoder.Get() > (distance * DRIVEWHEEL_PULSES_PER_INCH) && leftEncoder.Get() > (distance * DRIVEWHEEL_PULSES_PER_INCH)) //Might need a buffer here
+			{
+				myRobot.Drive(-speed, 0.0);
+			}
+			else
+			{
+				myRobot.Drive(0.0, 0.0);
+				droveStraight = true;
+				return;
+			}
+		}
+
 	void Auto_ZeroPointTurn(float degrees, float speed)
 	{
 		//TODO: figure out rotations/degree for the drive wheels when both sides are moving opposite directions (i.e. stationary turning)
@@ -527,6 +558,7 @@ private:
 		else
 		{
 			myRobot.Drive(0.0, 0.0);
+			return;
 		}
 
 		/**
@@ -550,15 +582,15 @@ private:
 
 	//Autonomous functions zone end
 
-	void AutonOne(void) //Drives forward. Could push tote/container
+	void AutonJustDrive(void) //Drives forward. Could push tote/container
 	{
 		if (autonTimer.Get() < 10) //10 seconds is more than enough. We just don't yet know how long it will take for the robot to drive however far forward. This is how we're going to sequence autonomous stuff: giving functions set completion times. -Ben
 		{
-			Auto_DriveStraightDistance(12, 0.5); //Forward one foot, for now
+			Auto_DriveStraightForwardDistance(12, 0.5); //Forward one foot, for now
 		}
 	}
 
-	void AutonTwo(void) //Grasps a yellow tote, turns, drives into the Auto Zone, and goes and sets it on the Landmark
+	void AutonSingleTote(void) //Grasps a yellow tote, turns, drives into the Auto Zone, and goes and sets it on the Landmark
 	{
 		//For now, we'll code this in regards to starting at the middle yellow tote
 		switch (autoLoopCounter)
@@ -614,7 +646,7 @@ private:
 		case 2:
 			if (autonTimer.Get() < 4)
 			{
-				Auto_DriveStraightDistance(107, 1.0);
+				Auto_DriveStraightForwardDistance(107, 1.0);
 			}
 			else
 			{
@@ -636,7 +668,7 @@ private:
 		case 4:
 			if (autonTimer.Get() < 2)
 			{
-				Auto_DriveStraightDistance(24, 1.0);
+				Auto_DriveStraightForwardDistance(24, 1.0);
 			}
 			else
 			{
@@ -665,7 +697,7 @@ private:
 		case 6:
 			if (autonTimer.Get() < 3)
 			{
-				Auto_DriveStraightDistance(36, -1.0);
+				Auto_DriveStraightBackwardDistance(36, 1.0);
 			}
 			else
 			{
@@ -679,7 +711,7 @@ private:
 		}
 	}
 
-	void AutonThree(void)  //Three tote stack autonomous
+	void AutonThreeTote(void)  //Three tote stack autonomous
 	{
 
 		float gyro_angle = gyro1.GetAngle();
@@ -717,11 +749,10 @@ private:
 				elevator.BrakeOn();
 				elevator.SetLevel(2);
 				rollers.PushLeft(0.7);
-				Auto_DriveStraightDistance(6, 0.3);
+				Auto_DriveStraightForwardDistance(6, 0.3);
 			}
 			else
 			{
-				Auto_DriveStraightDistance(0, 0.0);
 				autoLoopCounter++;
 				autonTimer.Reset();
 			}
@@ -729,13 +760,13 @@ private:
 		case 3:
 			if (autonTimer.Get() < 2)
 			{
-				Auto_DriveStraightDistance(57, 0.8);
+				Auto_DriveStraightForwardDistance(57, 0.8);
 				myRobot.Drive(0.8, 0.0);
 				rollers.Eat(0.7);
 			}
 			else
 			{
-				Auto_DriveStraightDistance(0, 0.0);
+				Auto_DriveStraightForwardDistance(0, 0.0);
 				autoLoopCounter++;
 				autonTimer.Reset();
 			}
@@ -773,7 +804,7 @@ private:
 				elevator.BrakeOn();
 				elevator.SetLevel(2);
 				rollers.PushLeft(0.7);
-				Auto_DriveStraightDistance(6, 0.3);
+				Auto_DriveStraightForwardDistance(6, 0.3);
 			}
 			else
 			{
@@ -784,12 +815,12 @@ private:
 		case 7:
 			if (autonTimer.Get() < 2)
 			{
-				Auto_DriveStraightDistance(57, 0.8);
+				Auto_DriveStraightForwardDistance(57, 0.8);
 				rollers.Eat(0.7);
 			}
 			else
 			{
-				Auto_DriveStraightDistance(0, 0.0);
+				Auto_DriveStraightForwardDistance(0, 0.0);
 				autoLoopCounter++;
 				autonTimer.Reset();
 			}
@@ -845,11 +876,11 @@ private:
 		case 11:
 			if (autonTimer.Get() < 2)
 			{
-				Auto_DriveStraightDistance(65, 0.8);
+				Auto_DriveStraightForwardDistance(65, 0.8);
 			}
 			else
 			{
-				Auto_DriveStraightDistance(0, 0.0);
+				Auto_DriveStraightForwardDistance(0, 0.0);
 				autoLoopCounter++;
 				autonTimer.Reset();
 
@@ -891,7 +922,7 @@ private:
 			if (autonTimer.Get() < 2)
 			{
 				rollers.CloseRollers();
-				Auto_DriveStraightDistance(57, -0.8);
+				Auto_DriveStraightBackwardDistance(57, 0.8);
 				rollers.Barf(0.7);
 			}
 			else
@@ -903,14 +934,14 @@ private:
 		}
 	}
 
-	void AutonFour(void) //Grabs 2 containers off the step TODO: need to figure out how hooks work so we can program them
+	void AutonTwoContainers(void) //Grabs 2 containers off the step TODO: need to figure out how hooks work so we can program them
 	{
 		switch (autoLoopCounter)
 		{
 		case 0:
 			if (autonTimer.Get() < 2)
 			{
-				Auto_DriveStraightDistance(48, 0.5);
+				Auto_DriveStraightForwardDistance(48, 0.5);
 			}
 			else
 			{
@@ -921,7 +952,7 @@ private:
 		case 1:
 			if (autonTimer.Get() < 2)
 			{
-				Auto_DriveStraightDistance(0, 0.0);
+				Auto_DriveStraightForwardDistance(0, 0.0);
 				// do hooky stuff
 			}
 			else
@@ -933,7 +964,7 @@ private:
 		case 2:
 			if (autonTimer.Get() < 2)
 			{
-				Auto_DriveStraightDistance(68, -0.5);
+				Auto_DriveStraightBackwardDistance(68, 0.5);
 			}
 			else
 			{
@@ -960,3 +991,10 @@ private:
 };
 
 START_ROBOT_CLASS(Robot);
+//six more
+// five more
+//(What do you do if you are still hungry after dinner?  You go back) four more
+//teh chezy pofs more
+// two more
+//juan more
+//10 burcks, 100 twiddies, 1 shafer, .000000000000000000001 jacobson
