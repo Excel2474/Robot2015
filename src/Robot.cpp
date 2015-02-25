@@ -75,6 +75,7 @@ class Robot: public IterativeRobot
 	//SmartDashboard driverDashboard;
 
 	LiveWindow *lw;
+	Command *autonomousCommand;
 	SendableChooser *mendableBruiser;
 	Victor joeTalon;
 	Victor kaylaTalon;
@@ -126,6 +127,7 @@ public:
 		myRobot(joeTalon, kaylaTalon),	// these must be initialized in the same order
 		stick(0),// as they are declared above.
 		lw(NULL),
+		mendableBruiser(),
 		joeTalon(LEFT_DRIVE_MOTOR),
 		kaylaTalon(RIGHT_DRIVE_MOTOR),
 //		loretta(9),
@@ -158,8 +160,17 @@ private:
 	void RobotInit()
 	{
 		lw = LiveWindow::GetInstance();
+
+		//vvv This is the code for changing the autonomous mode through SmartDashboard
 		mendableBruiser = new SendableChooser();
-		mendableBruiser->AddDefault("Choose Your Autonomous!", typedef enum autonOptions.work);
+		mendableBruiser->AddDefault("Drive Forward One Foot", new AUTONOMOUS_OPTIONS(AUTONOMOUS_JUST_DRIVE));
+		mendableBruiser->AddDefault("Single Tote", new AUTONOMOUS_OPTIONS(AUTONOMOUS_SINGLE_TOTE));
+		mendableBruiser->AddDefault("Three Tote Stack", new AUTONOMOUS_OPTIONS(AUTONOMOUS_THREE_TOTE_STACK));
+		mendableBruiser->AddDefault("Two Containers", new AUTONOMOUS_OPTIONS(AUTONOMOUS_TWO_CONTAINERS));
+		mendableBruiser->AddDefault("Five...?", new AUTONOMOUS_OPTIONS(AUTONOMOUS_FIVE));
+		SmartDashboard::PutData("Autonomous Modes", mendableBruiser);
+		//^^^
+
 		goingUp = false;
 		goingDown = false;
 		joeSmart = SmartDashboard::GetBoolean("Left Motor - Max Percentage SET", 0);
@@ -168,6 +179,9 @@ private:
 
 	void AutonomousInit()
 	{
+		//vvv SmartDashboard autonomous-choose thingy
+		autonomousCommand = (Command *) mendableBruiser->GetSelected();
+
 		autoLoopCounter = 0;
 		autonTimer.Reset();
 		autonTimer.Start();
@@ -184,6 +198,8 @@ private:
 
 		SmartDashboard::PutString("Choose an Autonomous!", "autonOptions");
 
+		//TODO: Is this it?!?!: switch (autonomousCommand)
+		//(Command *) autonomousCommand
 		switch (autonOptions)
 		{
 		case AUTONOMOUS_JUST_DRIVE:
@@ -254,12 +270,15 @@ private:
 		//double rightRPM = (rightEncoderRate/256) * 60;
 //		myRobot.ArcadeDrive(stick); // drive with arcade style (use right stick)
 //		HAAAAAAAANNNNDDDDSSSS
-		joeSmart = SmartDashboard::GetBoolean("Left Motor - Max Percentage SET", 0);
-		kaylaSmart = SmartDashboard::GetBoolean("Right Motor - Max Percentage SET", 0);
+
+		//vvv SmartDashboard motor buffer setter
+		joeSmart = SmartDashboard::GetBoolean("Forward drive - Max Percentage SET", 0.5);
+		kaylaSmart = SmartDashboard::GetBoolean("Turn drive - Max Percentage SET", 0.5);
 		if ((stick.GetRawAxis(4) < -0.1 || stick.GetRawAxis(4) > 0.1) || (stick.GetRawAxis(1) < -0.1 || stick.GetRawAxis(1) > 0.1))
 		{
-			myRobot.ArcadeDrive((stick.GetRawAxis(4) * 0.4), (stick.GetRawAxis(1) * 0.4)); //0.7 dampens the steering sensitivity, modify to taste
+			myRobot.ArcadeDrive((stick.GetRawAxis(4) * joeSmart), (stick.GetRawAxis(1) * kaylaSmart)); //0.7 dampens the steering sensitivity, modify to taste
 		}
+		//^^^
 		SmartDashboard::PutString("Do it work?!", "Aw yeah");
 		SmartDashboard::PutNumber("Left Side Speed", joeTalon.Get());
 		SmartDashboard::PutNumber("Right Side Speed", kaylaTalon.Get());
@@ -341,6 +360,7 @@ private:
 				//^Call LOWER elevator function
 				if (elevator.IsAtLevel() == true)
 				{
+
 					elevator.BrakeOn();
 					goingDown = false;
 				}
@@ -436,7 +456,7 @@ private:
 		}
 
 		//Spin Rollers In
-		if (stick.GetRawAxis(2) >= 0.05)
+		if (stick.GetRawAxis(2) >= 0.1  && stick.GetRawAxis(3) == 0.0)
 		{
 			rolyPolySpeed = (stick.GetRawAxis(2));
 			rollers.Eat(rolyPolySpeed);
@@ -445,20 +465,23 @@ private:
 		}
 
 		//Spin Rollers Out
-		else if (stick.GetRawAxis(3) >= 0.05)
+		else if (stick.GetRawAxis(3) >= 0.1 && stick.GetRawAxis(2) == 0)
 		{
 			rolyPolySpeed = (stick.GetRawAxis(3));
 			rollers.Barf(rolyPolySpeed);
+		}
+
+//		//Stop Rollers
+		else
+		{
+			rollers.RollersIdle();
+		}
+//		if (stick.GetRawAxis(3) >= 0.1 && stick.GetRawAxis(2) == 0.0)
+//		{
 //			SmartDashboard::Put
 //			thing1.SetSpeed(-stick.GetRawAxis(2));
 //			thing2.SetSpeed(stick.GetRawAxis(3));
-		}
-		//Stop Rollers
-		else
-		{
-			rolyPolySpeed = 0;
-			rollers.Eat(rolyPolySpeed);
-		}
+//		}
 
 
 		//Solenoid Test
@@ -595,7 +618,7 @@ private:
 
 	//Autonomous functions zone end
 
-	void AutonJustDrive(void) //Drives forward. Could push tote/container
+	void AutonJustDrive() //Drives forward. Could push tote/container
 	{
 		if (autonTimer.Get() < 10) //10 seconds is more than enough. We just don't yet know how long it will take for the robot to drive however far forward. This is how we're going to sequence autonomous stuff: giving functions set completion times. -Ben
 		{
@@ -603,7 +626,7 @@ private:
 		}
 	}
 
-	void AutonSingleTote(void) //Grasps a yellow tote, turns, drives into the Auto Zone, and goes and sets it on the Landmark
+	void AutonSingleTote() //Grasps a yellow tote, turns, drives into the Auto Zone, and goes and sets it on the Landmark
 	{
 		//For now, we'll code this in regards to starting at the middle yellow tote
 		switch (autoLoopCounter)
@@ -724,7 +747,7 @@ private:
 		}
 	}
 
-	void AutonThreeTote(void)  //Three tote stack autonomous
+	void AutonThreeTote()  //Three tote stack autonomous
 	{
 
 		float gyro_angle = gyro1.GetAngle();
@@ -947,7 +970,7 @@ private:
 		}
 	}
 
-	void AutonTwoContainers(void) //Grabs 2 containers off the step TODO: need to figure out how hooks work so we can program them
+	void AutonTwoContainers() //Grabs 2 containers off the step TODO: need to figure out how hooks work so we can program them
 	{
 		switch (autoLoopCounter)
 		{
@@ -988,7 +1011,7 @@ private:
 		}
 	}
 
-	void AutonFive(void) //
+	void AutonFive() //
 	{
 		switch (autoLoopCounter)
 		{
@@ -1006,8 +1029,8 @@ private:
 START_ROBOT_CLASS(Robot);
 //six more
 // five more
-//(What do you do if you are still hungry after dinner?  You go back) four more
+// four more
 //teh chezy pofs more
 // two more
 //juan more
-//10 burcks, 100 twiddies, 1 shafer, .000000000000000000001 jacobson
+//100 twiddies, 10 burcks, 1 shafer, .000000000000000000001 jacobson

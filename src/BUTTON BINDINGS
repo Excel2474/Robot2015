@@ -1,0 +1,18 @@
+Controller button bindings (Up-to-date as of:  2/24/2015)
+
+Drive
+Drive forward/back: Left Stick Y-axis 	(Axis 4)
+Turn left/right:	Right Stick X-axis	(Axis 1)
+
+Claw
+Open claw:			D-Pad Up	(POV 0)
+Close claw:			D-Pad Down	(POV 180)
+
+Elevator Slide
+Extend elevator:	D-Pad Right	(POV 90)
+Retract elevator:	D-Pad Left	(POV 270)
+
+Elevator Level
+Lower level:		A button	(Button 1)
+Raise level:		B button	(Button 2)
+Drive elevator up/down:		
