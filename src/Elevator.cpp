@@ -191,7 +191,7 @@ void Elevator::TestElevatorMotor(float motorSpeed)
 {
 	//logic to measure: "if it's at the top, it won't run up" and "if it's at the bottom, it won't run down"
 	//I don't know how the motor is oriented, so the stick axis/motor direction correspondence may be wrong
-	if (motorSpeed < -0.1)
+	if (motorSpeed < -0.02)
 	{
 		if ( /* elevatorEncoder.Get() == 0 || */ leftLowerLimit.Get() == false /* || rightLowerLimit.Get() == true */)
 		{
@@ -202,7 +202,7 @@ void Elevator::TestElevatorMotor(float motorSpeed)
 			elevatorMotor.SetSpeed(motorSpeed * 0.6); //Buffer, just in case
 		}
 	}
-	else if (motorSpeed > 0.1)
+	else if (motorSpeed > 0.02)
 	{
 //		if (elevatorEncoder.Get() == 1500 || leftUpperLimit.Get() == true || rightUpperLimit.Get() == true ) //We should define a constant for the maximum possible count the encoder can have. For now, I'm using the count value for Level Six
 //		{
