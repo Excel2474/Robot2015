@@ -36,7 +36,7 @@ private:
 	// = new DigitalInput(0)
 	int destinationLevel;
 	int destinationFloor;
-
+	float destinationPulse;
 	PIDController elevatorPid;
 
 public: //Elevator Extend
@@ -52,6 +52,7 @@ public: //Elevator Extend
 	bool IsAtLevel();
 	void TestElevatorMotor(float motorSpeed);
 
+	void SetPID(float p, float i, float d){elevatorPid.SetPID(p,i,d);}
 };
 
 

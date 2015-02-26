@@ -46,7 +46,6 @@ typedef enum
 	AUTONOMOUS_FIVE
 }AUTONOMOUS_OPTIONS;
 
-AUTONOMOUS_OPTIONS autonOptions;
 
 typedef enum
 {
@@ -75,7 +74,6 @@ class Robot: public IterativeRobot
 	//SmartDashboard driverDashboard;
 
 	LiveWindow *lw;
-	Command *autonomousCommand;
 	SendableChooser *mendableBruiser;
 	Victor joeTalon;
 	Victor kaylaTalon;
@@ -89,8 +87,7 @@ class Robot: public IterativeRobot
 	Solenoid shiftUpRetract;
 	Encoder rightEncoder;
 	Encoder leftEncoder;
-	DigitalInput clicker;
-	float lastCurve = 0;
+	//DigitalInput clicker;
 	bool curvyWurvy = false;
 	bool extended = false;
 	bool clawOpen = true;
@@ -121,6 +118,7 @@ class Robot: public IterativeRobot
 	Compressor compressor;
 	Rollers rollers;
 	Gyro gyro1;
+	AUTONOMOUS_OPTIONS selectedAutonomousRoutine;
 
 public:
 	Robot() :
@@ -140,7 +138,7 @@ public:
 		shiftUpRetract(SOLENOID_DRIVE_SHIFT_RETRACT),
 		rightEncoder(RIGHT_ENCODER_A, RIGHT_ENCODER_B, true),
 		leftEncoder(LEFT_ENCODER_A, LEFT_ENCODER_B, true),
-		clicker(0),
+//		clicker(0),
 		claws(SOLENOID_CLAW_EXTEND, SOLENOID_CLAW_RETRACT),
 		elevator(SOLENOID_ELEVATOR_EXTEND, SOLENOID_ELEVATOR_RETRACT, SOLENOID_ELEVATOR_BRAKE_EXTEND, SOLENOID_ELEVATOR_BRAKE_RETRACT, ELEVATOR_MOTOR, ELEVATOR_ENCODER_A, ELEVATOR_ENCODER_B, LOWER_LEFT_LIMIT_SWITCH, LOWER_RIGHT_LIMIT_SWITCH, UPPER_LEFT_LIMIT_SWITCH, UPPER_RIGHT_LIMIT_SWITCH),
 		compressor(5),
@@ -152,8 +150,8 @@ public:
 		myRobot.SetExpiration(0.1);
 		SmartDashboard::init();
 		SmartDashboard::PutBoolean("High gear on?", shiftUpExtend.Get());
-		SmartDashboard::GetBoolean("Left Motor - Max Percentage SET", 0);
-		SmartDashboard::GetBoolean("Right Motor - Max Percentage SET", 0);
+//		SmartDashboard::GetBoolean("Left Motor - Max Percentage SET", 0);
+//		SmartDashboard::GetBoolean("Right Motor - Max Percentage SET", 0);
 	}
 
 private:
@@ -163,24 +161,25 @@ private:
 
 		//vvv This is the code for changing the autonomous mode through SmartDashboard
 		mendableBruiser = new SendableChooser();
-		mendableBruiser->AddDefault("Drive Forward One Foot", new AUTONOMOUS_OPTIONS(AUTONOMOUS_JUST_DRIVE));
-		mendableBruiser->AddDefault("Single Tote", new AUTONOMOUS_OPTIONS(AUTONOMOUS_SINGLE_TOTE));
-		mendableBruiser->AddDefault("Three Tote Stack", new AUTONOMOUS_OPTIONS(AUTONOMOUS_THREE_TOTE_STACK));
-		mendableBruiser->AddDefault("Two Containers", new AUTONOMOUS_OPTIONS(AUTONOMOUS_TWO_CONTAINERS));
-		mendableBruiser->AddDefault("Five...?", new AUTONOMOUS_OPTIONS(AUTONOMOUS_FIVE));
+		mendableBruiser->AddDefault("Drive Forward One Foot", (void *) AUTONOMOUS_JUST_DRIVE);
+		mendableBruiser->AddObject("Single Tote", (void *)(AUTONOMOUS_SINGLE_TOTE));
+		mendableBruiser->AddObject("Three Tote Stack", (void *)(AUTONOMOUS_THREE_TOTE_STACK));
+		mendableBruiser->AddObject("Two Containers", (void *)(AUTONOMOUS_TWO_CONTAINERS));
+		mendableBruiser->AddObject("Five...?", (void *)(AUTONOMOUS_FIVE));
 		SmartDashboard::PutData("Autonomous Modes", mendableBruiser);
 		//^^^
 
-		goingUp = false;
-		goingDown = false;
-		joeSmart = SmartDashboard::GetBoolean("Left Motor - Max Percentage SET", 0);
-		kaylaSmart = SmartDashboard::GetBoolean("Right Motor - Max Percentage SET", 0);
+		SmartDashboard::PutNumber("Elevator_P",0.1);
+		SmartDashboard::PutNumber("Elevator_I",0.0);
+		SmartDashboard::PutNumber("Elevator_D",0.0);
+		SmartDashboard::PutNumber("Throttle Dampening", 0.5);
+		SmartDashboard::PutNumber("Steering Dampening", 0.5);
 	}
 
 	void AutonomousInit()
 	{
 		//vvv SmartDashboard autonomous-choose thingy
-		autonomousCommand = (Command *) mendableBruiser->GetSelected();
+		selectedAutonomousRoutine = (AUTONOMOUS_OPTIONS)((int) mendableBruiser->GetSelected());
 
 		autoLoopCounter = 0;
 		autonTimer.Reset();
@@ -196,11 +195,12 @@ private:
 	void AutonomousPeriodic()
 	{
 
+		elevator.Execute();
 		SmartDashboard::PutString("Choose an Autonomous!", "autonOptions");
 
 		//TODO: Is this it?!?!: switch (autonomousCommand)
 		//(Command *) autonomousCommand
-		switch (autonOptions)
+		switch (selectedAutonomousRoutine)
 		{
 		case AUTONOMOUS_JUST_DRIVE:
 			AutonJustDrive();
@@ -251,7 +251,6 @@ private:
 
 	void TeleopInit()
 	{
-		lastCurve = 1;
 		compressor.Start();
 		shiftUpRetract.Set(true);
 		shiftUpExtend.Set(false);
@@ -262,26 +261,51 @@ private:
 	void TeleopDisabled()
 	{
 		//driverDashboard.PutBoolean("Extended", extended);
+		elevator.Execute();
 	}
 
 	void TeleopPeriodic()
 	{
+		elevator.Execute();
+		SmartDashboard::PutBoolean("High gear ON?", shiftUpExtend.Get());
+		SmartDashboard::PutString("Do it work?!", "Aw yeah");
+		SmartDashboard::PutNumber("Left Side Speed", joeTalon.Get());
+		SmartDashboard::PutNumber("Right Side Speed", kaylaTalon.Get());
 		//double rightEncoderRate = rightEncoder.GetRate();
 		//double rightRPM = (rightEncoderRate/256) * 60;
 //		myRobot.ArcadeDrive(stick); // drive with arcade style (use right stick)
 //		HAAAAAAAANNNNDDDDSSSS
 
 		//vvv SmartDashboard motor buffer setter
-		joeSmart = SmartDashboard::GetBoolean("Forward drive - Max Percentage SET", 0.5);
-		kaylaSmart = SmartDashboard::GetBoolean("Turn drive - Max Percentage SET", 0.5);
+		joeSmart = SmartDashboard::GetNumber("Throttle Dampening", 0.5);
+		kaylaSmart = SmartDashboard::GetNumber("Steering Dampening", 0.5);
 		if ((stick.GetRawAxis(4) < -0.1 || stick.GetRawAxis(4) > 0.1) || (stick.GetRawAxis(1) < -0.1 || stick.GetRawAxis(1) > 0.1))
 		{
 			myRobot.ArcadeDrive((stick.GetRawAxis(4) * joeSmart), (stick.GetRawAxis(1) * kaylaSmart)); //0.7 dampens the steering sensitivity, modify to taste
 		}
+
+
+		//PID Test helper
+
+		//Drop Routine Start
+		float p = SmartDashboard::GetNumber("Elevator_P");
+		float i = SmartDashboard::GetNumber("Elevator_I");
+		float d = SmartDashboard::GetNumber("Elevator_D");
+		static bool wasButton8Pressed = false;//static means that the variable is saved even after you leave the function
+		if (stick.GetRawButton(8) == true)
+		{
+			if (wasButton8Pressed == false)
+			{
+				elevator.SetPID(p,i,d);
+				wasButton8Pressed = true;
+			}
+		}
+		else
+		{
+			wasButton8Pressed = false;
+		}
+
 		//^^^
-		SmartDashboard::PutString("Do it work?!", "Aw yeah");
-		SmartDashboard::PutNumber("Left Side Speed", joeTalon.Get());
-		SmartDashboard::PutNumber("Right Side Speed", kaylaTalon.Get());
 		//Drive don't do this, use arcade drive
 //		if ((stick.GetRawAxis(1) < 0.1) && (stick.GetRawAxis(1) > -0.1))
 //		{
@@ -351,20 +375,19 @@ private:
 		if (goingDown == true && goingUp == false) //This logic here with the && needs to be checked. -Ben
 		{
 			elevator.BrakeOff();
-			brakeTime.Reset();
-			brakeTime.Start();
-			if (brakeTime.Get() > 0.1)
-			{
+//			brakeTime.Reset();
+//			brakeTime.Start();
+//			if (brakeTime.Get() > 0.1)
+//			{
 				elevatorLevel = elevatorLevel - 1;
 				elevator.SetLevel(elevatorLevel);
 				//^Call LOWER elevator function
 				if (elevator.IsAtLevel() == true)
 				{
-
 					elevator.BrakeOn();
 					goingDown = false;
 				}
-			}
+//			}
 		}
 
 		//Raise Elevator Level
@@ -375,10 +398,10 @@ private:
 		if (goingUp == true && goingDown == false) //This logic right here with the && needs to be checked. -Ben
 		{
 			elevator.BrakeOff();
-			brakeTime.Reset();
-			brakeTime.Start();
-			if (brakeTime.Get() > 0.1)
-			{
+//			brakeTime.Reset();
+//			brakeTime.Start();
+//			if (brakeTime.Get() > 0.1)
+//			{
 				elevatorLevel = elevatorLevel + 1;
 				elevator.SetLevel(elevatorLevel);
 				//^Call RAISE elevator function
@@ -387,7 +410,7 @@ private:
 					elevator.BrakeOn();
 					goingUp = false;
 				}
-			}
+//			}
 		}
 
 		//TEST CODE - Control elevator motor speed
@@ -444,7 +467,6 @@ private:
 			shiftUp = true;
 			shiftUpExtend.Set(true);
 			shiftUpRetract.Set(false);
-			SmartDashboard::PutBoolean("High gear ON?", shiftUpExtend.Get());
 		}
 
 		//Shift Down Gear
@@ -538,6 +560,7 @@ private:
 
 	void Auto_DriveStraightForwardDistance(float distance, float speed) //distance in inches
 	{
+		//JOE: You can't reset these here, or you'll always Get() zero
 		rightEncoder.Reset();
 		leftEncoder.Reset();
 //		if(droveStraight == true)
@@ -546,6 +569,8 @@ private:
 //			leftEncoder.Reset();
 //			droveStraight = false;
 //		}
+
+		//JOE: DO this rightEncoder.SetDistancePerPulse(or whatever that function is), then here, use rightEncoder.GetDistance
 		if (rightEncoder.Get() < (distance * DRIVEWHEEL_PULSES_PER_INCH) && leftEncoder.Get() < (distance * DRIVEWHEEL_PULSES_PER_INCH)) //Might need a buffer here
 		{
 			myRobot.Drive(speed, 0.0);

@@ -6,12 +6,21 @@
  */
 #include "Elevator.h"
 
+#define LIMIT_SWITCHES_ARE_MISSING
+
+#define PULSES_PER_REVOLUTION 250
+#define PITCH_DIAMETER 2.638F
+#define PI 3.1415926F
+#define DISTANCE_PER_PULSE ((2*PI*PITCH_DIAMETER) / PULSES_PER_REVOLUTION)
+//Pitch Diameter 2.638
+
 Elevator::Elevator(int elevator_extend, int elevator_retract, int elevator_brake_extend, int elevator_brake_retract, int elevator_motor, int elevator_encoder_A, int elevator_encoder_B, int lower_left_limit, int lower_right_limit, int upper_left_limit, int upper_right_limit):
 elevatorExtend(elevator_extend),
 elevatorRetract(elevator_retract),
 elevatorBrakeExtend(elevator_brake_extend),
 elevatorBrakeRetract(elevator_brake_retract),
 elevatorMotor(elevator_motor),
+
 elevatorEncoder(elevator_encoder_A, elevator_encoder_B, true),
 leftLowerLimit(lower_left_limit),
 rightLowerLimit(lower_right_limit),
@@ -22,11 +31,18 @@ destinationFloor(1),
 elevatorPid(0.1, 0.01, 0.0, &elevatorEncoder, &elevatorMotor) //you must use a split pwm to drive both victors from one pwm output; then you just have an elevatorMotor victor declaration, which drives two motors
 
 {
-	elevatorEncoder.SetDistancePerPulse(0.044007429891485);
+	elevatorEncoder.SetDistancePerPulse(DISTANCE_PER_PULSE);
+//	elevatorEncoder.SetDistancePerPulse(0.044007429891485);
+	elevatorEncoder.SetPIDSourceParameter(PIDSource::kDistance);
 //	elevatorEncoder.SetDistancePerPulse((distPerPulse/pulsesPerRotation)) 256 pulses per rotation; ??? distance per rotation (compute this from gear ratios and
 // pd = 1.751, ratio = 1:2, 2(pi)1.751
+	//
 	SmartDashboard::init();
 	SmartDashboard::PutNumber("Current Elevator Level", destinationFloor);
+	SmartDashboard::PutNumber("Current Encoder Position", 0);
+	SmartDashboard::PutNumber("Distance Per Pulse", DISTANCE_PER_PULSE);
+	elevatorPid.SetOutputRange(-0.2,1.0);
+	elevatorPid.SetAbsoluteTolerance(0.25);
 
 }
 
@@ -65,11 +81,15 @@ void Elevator::RetractElevator()
 
 void Elevator::Execute()
 {
-		if (leftLowerLimit.Get() == true || rightLowerLimit.Get() == true)
-		{
-			elevatorEncoder.Reset();
-			elevatorPid.Reset();
-		}
+
+	SmartDashboard::PutNumber("Current Encoder Position", elevatorEncoder.GetDistance());
+#ifndef LIMIT_SWITCHES_ARE_MISSING
+	if (leftLowerLimit.Get() == true || rightLowerLimit.Get() == true)
+	{
+		elevatorEncoder.Reset();
+		elevatorPid.Reset();
+	}
+#endif
 	//This will have to keep track while the elevator is reseting watching for the limit switch, once it hits the switch then reset the encoder and pid, then set the pid setpoint to 0 and enable it
 }
 
@@ -121,7 +141,7 @@ void Elevator::SetLevel(int destinationLevel)
 			else
 			{
 				elevatorMotor.SetSpeed(0);	//Do we need this? It would be useful, wouldn't it?
-				elevatorEncoder.Reset();
+//				elevatorEncoder.Reset();
 			}
 			break;
 
@@ -176,7 +196,36 @@ void Elevator::SetLevel(int destinationLevel)
 
 bool Elevator::IsAtLevel()
 {
-	if ((destinationLevel < (elevatorEncoder.Get() + 1)) && (destinationLevel > (elevatorEncoder.Get() - 1))) //destinationLevel >= (elevatorEncoder.Get() - 1.0) && destinationLevel <= (elevatorEncoder.Get() + 1)
+	return elevatorPid.OnTarget();
+	if (destinationLevel == 0)
+	{
+		destinationPulse = 0;
+	}
+	if (destinationLevel == 1)
+	{
+		destinationPulse = 136;
+	}
+	if (destinationLevel == 2)
+	{
+		destinationPulse = 409;
+	}
+	if (destinationLevel == 3)
+	{
+		destinationPulse = 682;
+	}
+	if (destinationLevel == 4)
+	{
+		destinationPulse = 954;
+	}
+	if (destinationLevel == 5)
+	{
+		destinationPulse = 1227;
+	}
+	if (destinationLevel == 6)
+	{
+		destinationPulse = 1500;
+	}
+	if ((destinationPulse < (elevatorEncoder.Get() + 2)) && (destinationPulse > (elevatorEncoder.Get() - 2))) //destinationLevel >= (elevatorEncoder.Get() - 1.0) && destinationLevel <= (elevatorEncoder.Get() + 1)
 	{
 		SmartDashboard::PutNumber("Current Elevator Level", destinationFloor);
 		return true;
