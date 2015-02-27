@@ -102,28 +102,28 @@ void Elevator::Reset()
 
 void Elevator::BrakeOn()
 {
-	if (elevatorBrakeExtend.Get() == false && elevatorBrakeRetract.Get() == true)
-	{
-		return;
-	}
-	else
-	{
-		elevatorBrakeExtend.Set(false);
-		elevatorBrakeRetract.Set(true);
-	}
+//	if (elevatorBrakeExtend.Get() == false && elevatorBrakeRetract.Get() == true)
+//	{
+//		return;
+//	}
+//	else
+//	{
+	elevatorBrakeExtend.Set(false);
+	elevatorBrakeRetract.Set(true);
+//	}
 }
 
 void Elevator::BrakeOff()
 {
-	if (elevatorBrakeExtend.Get() == true && elevatorBrakeRetract.Get() == false)
-	{
-		return;
-	}
-	else
-	{
-		elevatorBrakeExtend.Set(true);
-		elevatorBrakeRetract.Set(false);
-	}
+//	if (elevatorBrakeExtend.Get() == true && elevatorBrakeRetract.Get() == false)
+//	{
+//		return;
+//	}
+//	else
+//	{
+	elevatorBrakeExtend.Set(true);
+	elevatorBrakeRetract.Set(false);
+//	}
 }
 
 void Elevator::SetLevel(int destinationLevel)
@@ -133,7 +133,7 @@ void Elevator::SetLevel(int destinationLevel)
 		switch (destinationLevel)
 		{
 		case 0:
-			if (leftLowerLimit.Get() == false && rightLowerLimit.Get() == false)
+			if (leftLowerLimit.Get() == false || rightLowerLimit.Get() == false)
 			{
 				elevatorPid.SetSetpoint(LEVEL_ZERO);
 				destinationFloor = 0;
@@ -197,43 +197,43 @@ void Elevator::SetLevel(int destinationLevel)
 bool Elevator::IsAtLevel()
 {
 	return elevatorPid.OnTarget();
-	if (destinationLevel == 0)
-	{
-		destinationPulse = 0;
-	}
-	if (destinationLevel == 1)
-	{
-		destinationPulse = 136;
-	}
-	if (destinationLevel == 2)
-	{
-		destinationPulse = 409;
-	}
-	if (destinationLevel == 3)
-	{
-		destinationPulse = 682;
-	}
-	if (destinationLevel == 4)
-	{
-		destinationPulse = 954;
-	}
-	if (destinationLevel == 5)
-	{
-		destinationPulse = 1227;
-	}
-	if (destinationLevel == 6)
-	{
-		destinationPulse = 1500;
-	}
-	if ((destinationPulse < (elevatorEncoder.Get() + 2)) && (destinationPulse > (elevatorEncoder.Get() - 2))) //destinationLevel >= (elevatorEncoder.Get() - 1.0) && destinationLevel <= (elevatorEncoder.Get() + 1)
-	{
-		SmartDashboard::PutNumber("Current Elevator Level", destinationFloor);
-		return true;
-	}
-	else
-	{
-		return false;
-	}
+//	if (destinationLevel == 0)
+//	{
+//		destinationPulse = 0;
+//	}
+//	if (destinationLevel == 1)
+//	{
+//		destinationPulse = 136;
+//	}
+//	if (destinationLevel == 2)
+//	{
+//		destinationPulse = 409;
+//	}
+//	if (destinationLevel == 3)
+//	{
+//		destinationPulse = 682;
+//	}
+//	if (destinationLevel == 4)
+//	{
+//		destinationPulse = 954;
+//	}
+//	if (destinationLevel == 5)
+//	{
+//		destinationPulse = 1227;
+//	}
+//	if (destinationLevel == 6)
+//	{
+//		destinationPulse = 1500;
+//	}
+//	if ((destinationPulse < (elevatorEncoder.Get() + 2)) && (destinationPulse > (elevatorEncoder.Get() - 2))) //destinationLevel >= (elevatorEncoder.Get() - 1.0) && destinationLevel <= (elevatorEncoder.Get() + 1)
+//	{
+//		SmartDashboard::PutNumber("Current Elevator Level", destinationFloor);
+//		return true;
+//	}
+//	else
+//	{
+//		return false;
+//	}
 }
 
 void Elevator::TestElevatorMotor(float motorSpeed)

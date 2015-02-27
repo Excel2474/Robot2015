@@ -11,12 +11,12 @@
 
 // v v These values are the corresponding encoder counts for each level.
 #define LEVEL_ZERO 0 // (8 inches from floor)
-#define LEVEL_ONE 136 // ^(14 in because +6) ^
-#define LEVEL_TWO 409// ^ ^
-#define LEVEL_THREE 682// ^ ^
-#define LEVEL_FOUR 954// ^ ^
-#define LEVEL_FIVE 1227// ^ ^
-#define LEVEL_SIX 1500// ^ ^
+#define LEVEL_ONE 5.985 // ^(14 in because +6) ^
+#define LEVEL_TWO 17.999// ^ ^
+#define LEVEL_THREE 30.013// ^ ^
+#define LEVEL_FOUR 41.983// ^ ^
+#define LEVEL_FIVE 53.997// ^ ^
+#define LEVEL_SIX 66.011// ^ ^
 // 1 inch = 22.7234 pulses
 
 class Elevator : public IterativeRobot
@@ -36,7 +36,7 @@ private:
 	// = new DigitalInput(0)
 	int destinationLevel;
 	int destinationFloor;
-	float destinationPulse;
+	//float destinationPulse;
 	PIDController elevatorPid;
 
 public: //Elevator Extend

@@ -98,7 +98,7 @@ class Robot: public IterativeRobot
 	bool turnt = true;
 	//bool gyroReset = false;
 	int autoLoopCounter = 0;
-	int elevatorLevel = 1;
+	int elevatorLevel = 0;
 	int encoderCountNow = 0;
 	int encoderCountPrev = 0;
 	float rolyPolySpeed = 0;
@@ -108,9 +108,12 @@ class Robot: public IterativeRobot
 	bool rollersOpen = true;
 	bool numanumamaticIsPressed = false;
 	bool shiftUp = false;
-	bool override;
+	bool override = false;
 	bool goingUp = false;
 	bool goingDown = false;
+	bool isBrakeOn = false;	//Should this start off as true or false?
+	bool activatedElevatorDown = true;
+	bool activatedElevatorUp = true;
 	Timer brakeTime;
 	Timer autonTimer;
 	Claw claws;
@@ -374,20 +377,24 @@ private:
 		}
 		if (goingDown == true && goingUp == false) //This logic here with the && needs to be checked. -Ben
 		{
-			elevator.BrakeOff();
-//			brakeTime.Reset();
-//			brakeTime.Start();
-//			if (brakeTime.Get() > 0.1)
-//			{
+			if (activatedElevatorDown == true)
+			{
+				elevator.BrakeOff();
+				//brakeTime.Reset();
+				//brakeTime.Start();
+				//if (brakeTime.Get() > 0.1)
+				//{
 				elevatorLevel = elevatorLevel - 1;
 				elevator.SetLevel(elevatorLevel);
-				//^Call LOWER elevator function
-				if (elevator.IsAtLevel() == true)
-				{
-					elevator.BrakeOn();
-					goingDown = false;
-				}
-//			}
+			//^Call LOWER elevator function
+				activatedElevatorDown = false;
+			}
+			if (elevator.IsAtLevel() == true)
+			{
+				elevator.BrakeOn();
+				goingDown = false;
+				activatedElevatorDown = true;
+			}
 		}
 
 		//Raise Elevator Level
@@ -397,31 +404,68 @@ private:
 		}
 		if (goingUp == true && goingDown == false) //This logic right here with the && needs to be checked. -Ben
 		{
-			elevator.BrakeOff();
-//			brakeTime.Reset();
-//			brakeTime.Start();
-//			if (brakeTime.Get() > 0.1)
-//			{
+			if (activatedElevatorUp == true)
+			{
+				elevator.BrakeOff();
+	//			brakeTime.Reset();
+	//			brakeTime.Start();
+	//			if (brakeTime.Get() > 0.1)
+	//			{
 				elevatorLevel = elevatorLevel + 1;
 				elevator.SetLevel(elevatorLevel);
 				//^Call RAISE elevator function
-				if (elevator.IsAtLevel() == true)
-				{
-					elevator.BrakeOn();
-					goingUp = false;
-				}
-//			}
+				activatedElevatorUp = false;
+			}
+			if (elevator.IsAtLevel() == true)
+			{
+				elevator.BrakeOn();
+				goingUp = false;
+				activatedElevatorUp = true;
+			}
 		}
 
 		//TEST CODE - Control elevator motor speed
 		if (stick.GetRawAxis(0) < -0.1 || stick.GetRawAxis(0) > 0.1)
 		{
-			elevator.TestElevatorMotor(stick.GetRawAxis(0));
+			brakeTime.Start();
+			if (brakeTime.Get() < .3)
+			{
+				elevator.TestElevatorMotor(-0.8);
+				elevator.BrakeOff();
+			}
+			else if (brakeTime.Get() >= .3)
+			{
+				elevator.TestElevatorMotor(stick.GetRawAxis(0));
+			}
 		}
 		else
 		{
 			elevator.TestElevatorMotor(0);
+			elevator.BrakeOn();
+			brakeTime.Reset();
 		}
+
+		//TEST CODE - Toggle elevator brake
+//		static bool wasButton7Pressed = false;
+//		if (stick.GetRawButton(7) == true)
+//		{
+//			if (wasButton7Pressed == false)
+//			{
+//				if ((elevator.elevatorBrakeExtend.Get() == true) && (elevator.elevatorBrakeRetract.Get() == false))
+//				{
+//					elevator.BrakeOn();
+//				}
+//				if ((elevator.elevatorBrakeExtend.Get() == false) && (elevator.elevatorBrakeRetract.Get() == true))
+//				{
+//					elevator.BrakeOff();
+//				}
+//				wasButton7Pressed = true;
+//			}
+//		}
+//		else
+//		{
+//			wasButton7Pressed = false;
+//		}
 
 		// Open Claw and rollers
 		if (stick.GetRawButton(4) == true && yReleased == true)
@@ -447,14 +491,14 @@ private:
 		}
 
 		//Close Rollers
-		if (stick.GetRawButton(5) == true && rollersOpen == true && override == false && elevatorLevel != 0 && elevatorExtended)
+		if (stick.GetRawButton(5) == true /* && rollersOpen == true && override == false && elevatorLevel != 0*/)
 		{
 			rollersOpen = false;
 			rollers.CloseRollers();
 			//Call close rollers function
 		}
 		//Else Open Rollers
-		else if (stick.GetRawButton(5) == false && rollersOpen == false && override == false)
+		else //if (stick.GetRawButton(5) == false && rollersOpen == false && override == false)
 		{
 			rollersOpen = true;
 			rollers.OpenRollers();
