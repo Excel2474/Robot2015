@@ -51,6 +51,7 @@ public: //Elevator Extend
 	void SetLevel(int destinationLevel);
 	bool IsAtLevel();
 	void TestElevatorMotor(float motorSpeed);
+	void DisablePid();
 
 	void SetPID(float p, float i, float d){elevatorPid.SetPID(p,i,d);}
 };

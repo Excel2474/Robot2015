@@ -427,6 +427,7 @@ private:
 		//TEST CODE - Control elevator motor speed
 		if (stick.GetRawAxis(0) < -0.1 || stick.GetRawAxis(0) > 0.1)
 		{
+			elevator.DisablePid();
 			brakeTime.Start();
 			if (brakeTime.Get() < .3)
 			{
@@ -490,20 +491,20 @@ private:
 			override = false;
 		}
 
-		//Close Rollers
-		if (stick.GetRawButton(5) == true /* && rollersOpen == true && override == false && elevatorLevel != 0*/)
-		{
-			rollersOpen = false;
-			rollers.CloseRollers();
-			//Call close rollers function
-		}
-		//Else Open Rollers
-		else //if (stick.GetRawButton(5) == false && rollersOpen == false && override == false)
-		{
-			rollersOpen = true;
-			rollers.OpenRollers();
-			//Call open rollers function
-		}
+//		//Close Rollers
+//		if (stick.GetRawButton(5) == true /* && rollersOpen == true && override == false && elevatorLevel != 0*/)
+//		{
+//			rollersOpen = false;
+//			rollers.CloseRollers();
+//			//Call close rollers function
+//		}
+//		//Else Open Rollers
+//		else //if (stick.GetRawButton(5) == false && rollersOpen == false && override == false)
+//		{
+//			rollersOpen = true;
+//			rollers.OpenRollers();
+//			//Call open rollers function
+//		}
 
 		//Shift Up Gear
 		if (stick.GetRawButton(6) == true && shiftUp == false)
@@ -526,6 +527,7 @@ private:
 		{
 			rolyPolySpeed = (stick.GetRawAxis(2));
 			rollers.Eat(rolyPolySpeed);
+			rollers.CloseRollers();
 //			thing1.SetSpeed(stick.GetRawAxis(2));
 //			thing2.SetSpeed(-stick.GetRawAxis(2));
 		}
@@ -535,11 +537,13 @@ private:
 		{
 			rolyPolySpeed = (stick.GetRawAxis(3));
 			rollers.Barf(rolyPolySpeed);
+			rollers.CloseRollers();
 		}
 
 //		//Stop Rollers
 		else
 		{
+			rollers.OpenRollers();
 			rollers.RollersIdle();
 		}
 //		if (stick.GetRawAxis(3) >= 0.1 && stick.GetRawAxis(2) == 0.0)

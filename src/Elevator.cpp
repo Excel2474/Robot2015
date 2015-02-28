@@ -28,7 +28,7 @@ leftUpperLimit(upper_left_limit),
 rightUpperLimit(upper_right_limit),
 destinationLevel(LEVEL_ONE),
 destinationFloor(1),
-elevatorPid(0.1, 0.01, 0.0, &elevatorEncoder, &elevatorMotor) //you must use a split pwm to drive both victors from one pwm output; then you just have an elevatorMotor victor declaration, which drives two motors
+elevatorPid(0.1, 0000.0000, 0.0, &elevatorEncoder, &elevatorMotor) //you must use a split pwm to drive both victors from one pwm output; then you just have an elevatorMotor victor declaration, which drives two motors
 
 {
 	elevatorEncoder.SetDistancePerPulse(DISTANCE_PER_PULSE);
@@ -41,7 +41,7 @@ elevatorPid(0.1, 0.01, 0.0, &elevatorEncoder, &elevatorMotor) //you must use a s
 	SmartDashboard::PutNumber("Current Elevator Level", destinationFloor);
 	SmartDashboard::PutNumber("Current Encoder Position", 0);
 	SmartDashboard::PutNumber("Distance Per Pulse", DISTANCE_PER_PULSE);
-	elevatorPid.SetOutputRange(-0.2,1.0);
+	elevatorPid.SetOutputRange(-0.2, 0.2);
 	elevatorPid.SetAbsoluteTolerance(0.25);
 
 }
@@ -81,7 +81,7 @@ void Elevator::RetractElevator()
 
 void Elevator::Execute()
 {
-
+	Timer elevatorRest;
 	SmartDashboard::PutNumber("Current Encoder Position", elevatorEncoder.GetDistance());
 #ifndef LIMIT_SWITCHES_ARE_MISSING
 	if (leftLowerLimit.Get() == true || rightLowerLimit.Get() == true)
@@ -90,6 +90,15 @@ void Elevator::Execute()
 		elevatorPid.Reset();
 	}
 #endif
+	elevatorRest.Start();
+	if (IsAtLevel() == true)
+	{
+		elevatorPid.Disable();
+		if (elevatorRest.Get() > 0.5)
+		{
+		BrakeOn();
+		}
+	}
 	//This will have to keep track while the elevator is reseting watching for the limit switch, once it hits the switch then reset the encoder and pid, then set the pid setpoint to 0 and enable it
 }
 
@@ -130,6 +139,7 @@ void Elevator::SetLevel(int destinationLevel)
 {
 	if (destinationLevel >= 0 && destinationLevel <= 6) // Makes sure level exists -- because reasons
 	{
+		elevatorPid.Enable();
 		switch (destinationLevel)
 		{
 		case 0:
@@ -266,6 +276,11 @@ void Elevator::TestElevatorMotor(float motorSpeed)
 	{
 		elevatorMotor.SetSpeed(0);
 	}
+}
+
+void Elevator::DisablePid()
+{
+	elevatorPid.Disable();
 }
 
 /*
