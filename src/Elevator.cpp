@@ -29,7 +29,6 @@ rightUpperLimit(upper_right_limit),
 destinationLevel(LEVEL_ONE),
 destinationFloor(1),
 elevatorPid(0.1, 0000.0000, 0.0, &elevatorEncoder, &elevatorMotor) //you must use a split pwm to drive both victors from one pwm output; then you just have an elevatorMotor victor declaration, which drives two motors
-
 {
 	elevatorEncoder.SetDistancePerPulse(DISTANCE_PER_PULSE);
 //	elevatorEncoder.SetDistancePerPulse(0.044007429891485);
@@ -250,19 +249,30 @@ void Elevator::TestElevatorMotor(float motorSpeed)
 {
 	//logic to measure: "if it's at the top, it won't run up" and "if it's at the bottom, it won't run down"
 	//I don't know how the motor is oriented, so the stick axis/motor direction correspondence may be wrong
+	float aCertainFloat;
 	if (motorSpeed < -0.02)
 	{
-		if ( /* elevatorEncoder.Get() == 0 || */ leftLowerLimit.Get() == false /* || rightLowerLimit.Get() == true */)
+		if (/* elevatorEncoder.Get() == 0 || */ leftLowerLimit.Get() == false /* || rightLowerLimit.Get() == true */)
 		{
 			elevatorMotor.SetSpeed(0);
 		}
 		else
 		{
-			elevatorMotor.SetSpeed(motorSpeed * 0.6); //Buffer, just in case
+			if (elevatorEncoder.Get() > aCertainFloat)
+			{
+				elevatorMotor.SetSpeed(motorSpeed * 0.6); //Buffer, just in case
+				aCertainFloat = 0;
+			}
+			else
+			{
+				elevatorMotor.SetSpeed(-motorSpeed);
+				BrakeOff();
+			}
 		}
 	}
 	else if (motorSpeed > 0.02)
 	{
+		elevatorEncoder.Get();
 //		if (elevatorEncoder.Get() == 1500 || leftUpperLimit.Get() == true || rightUpperLimit.Get() == true ) //We should define a constant for the maximum possible count the encoder can have. For now, I'm using the count value for Level Six
 //		{
 //			elevatorMotor.SetSpeed(0);
@@ -274,7 +284,10 @@ void Elevator::TestElevatorMotor(float motorSpeed)
 	}
 	else
 	{
+		elevatorPid.SetSetpoint(elevatorEncoder.Get());
 		elevatorMotor.SetSpeed(0);
+		aCertainFloat = (elevatorEncoder.Get() + 5);
+		BrakeOn();
 	}
 }
 
@@ -284,7 +297,7 @@ void Elevator::DisablePid()
 }
 
 /*
- * You'll also want a get desired level function and a is at desied level function
+ * You'll also want a get desired level function and a is at desired level function
  * Ignore D, unless someone helps with tuning
  * Set Level, rather than Up + Down;
  */
