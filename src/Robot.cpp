@@ -58,13 +58,15 @@ typedef enum
 	SOLENOID_ELEVATOR_BRAKE_EXTEND, //Release brake
 	SOLENOID_ELEVATOR_BRAKE_RETRACT //Engage brake
 
-}SOLENOID_CHANNEL;
+}SOLENOID_CHANNEL_MOD_0;
 
 typedef enum
 {
-	SOLENOID_CLAW_EXTEND, //These two are sketchy, what with being on the second PCM. -Ben 2/17/15
+	SOLENOID_CLAW_EXTEND,
 	SOLENOID_CLAW_RETRACT
-}CLAW_SOLENOID_CHANNEL;
+
+}SOLENOID_CHANNEL_MOD_1;
+
 
 
 class Robot: public IterativeRobot
@@ -137,8 +139,8 @@ public:
 //		thing2(4),
 //		numanumamaticExtend(0),
 //		numanumamaticRetract(1),
-		shiftUpExtend(SOLENOID_DRIVE_SHIFT_EXTEND),
-		shiftUpRetract(SOLENOID_DRIVE_SHIFT_RETRACT),
+		shiftUpExtend(0, SOLENOID_DRIVE_SHIFT_EXTEND),
+		shiftUpRetract(0, SOLENOID_DRIVE_SHIFT_RETRACT),
 		rightEncoder(RIGHT_ENCODER_A, RIGHT_ENCODER_B, true),
 		leftEncoder(LEFT_ENCODER_A, LEFT_ENCODER_B, true),
 //		clicker(0),
@@ -431,7 +433,7 @@ private:
 			brakeTime.Start();
 			if (brakeTime.Get() < .3)
 			{
-				elevator.TestElevatorMotor(-0.8);
+				elevator.TestElevatorMotor(-0.5);
 				elevator.BrakeOff();
 			}
 			else if (brakeTime.Get() >= .3)

@@ -15,10 +15,10 @@
 //Pitch Diameter 2.638
 
 Elevator::Elevator(int elevator_extend, int elevator_retract, int elevator_brake_extend, int elevator_brake_retract, int elevator_motor, int elevator_encoder_A, int elevator_encoder_B, int lower_left_limit, int lower_right_limit, int upper_left_limit, int upper_right_limit):
-elevatorExtend(elevator_extend),
-elevatorRetract(elevator_retract),
-elevatorBrakeExtend(elevator_brake_extend),
-elevatorBrakeRetract(elevator_brake_retract),
+elevatorExtend(0, elevator_extend),
+elevatorRetract(0, elevator_retract),
+elevatorBrakeExtend(0, elevator_brake_extend),
+elevatorBrakeRetract(0, elevator_brake_retract),
 elevatorMotor(elevator_motor),
 
 elevatorEncoder(elevator_encoder_A, elevator_encoder_B, true),

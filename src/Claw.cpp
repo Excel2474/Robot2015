@@ -7,8 +7,8 @@
 #include "Claw.h"
 
 Claw::Claw(int claw_extend, int claw_retract):
-clawExtend(claw_extend),
-clawRetract(claw_retract)
+clawExtend(1, claw_extend),
+clawRetract(1, claw_retract)
 {
 
 }
