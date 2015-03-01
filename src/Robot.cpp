@@ -43,7 +43,7 @@ typedef enum
 	AUTONOMOUS_SINGLE_TOTE,
 	AUTONOMOUS_THREE_TOTE_STACK,
 	AUTONOMOUS_TWO_CONTAINERS,
-	AUTONOMOUS_FIVE
+	AUTONOMOUS_ONE_CONTAINER
 }AUTONOMOUS_OPTIONS;
 
 
@@ -108,6 +108,7 @@ class Robot: public IterativeRobot
 	float joeSmart = 0;
 	bool yReleased;
 	bool rollersOpen = true;
+	bool firstTime = true;
 	bool numanumamaticIsPressed = false;
 	bool shiftUp = false;
 	bool override = false;
@@ -118,6 +119,7 @@ class Robot: public IterativeRobot
 	bool activatedElevatorUp = true;
 	Timer brakeTime;
 	Timer autonTimer;
+	Timer dropRoutineTimer;
 	Claw claws;
 	Elevator elevator;
 	Compressor compressor;
@@ -170,7 +172,7 @@ private:
 		mendableBruiser->AddObject("Single Tote", (void *)(AUTONOMOUS_SINGLE_TOTE));
 		mendableBruiser->AddObject("Three Tote Stack", (void *)(AUTONOMOUS_THREE_TOTE_STACK));
 		mendableBruiser->AddObject("Two Containers", (void *)(AUTONOMOUS_TWO_CONTAINERS));
-		mendableBruiser->AddObject("Five...?", (void *)(AUTONOMOUS_FIVE));
+		mendableBruiser->AddObject("One Container Into Auto Zone?", (void *)(AUTONOMOUS_ONE_CONTAINER));
 		SmartDashboard::PutData("Autonomous Modes", mendableBruiser);
 		//^^^
 
@@ -219,8 +221,8 @@ private:
 		case AUTONOMOUS_TWO_CONTAINERS:
 			AutonTwoContainers();
 			break;
-		case AUTONOMOUS_FIVE:
-			AutonFive();
+		case AUTONOMOUS_ONE_CONTAINER:
+			AutonOneContainer();
 			break;
 		}
 
@@ -364,11 +366,44 @@ private:
 			elevator.RetractElevator();
 		}
 
-		//Drop Routine Start
+		//Drop Routine Start TODO: Is drop routine coopertition related? or is it for any stack? Check for time values
 		if (stick.GetRawButton(3) == true && dropRoutineStarted == false && dropRoutineFinished == true)
 		{
+			if (firstTime == true)
+			{
+				dropRoutineTimer.Reset();
+				dropRoutineTimer.Start();
+				elevatorLevel = elevatorLevel - 1;
+				firstTime = false;
+			}
 			dropRoutineStarted = true;
 			dropRoutineFinished = false;
+			if (dropRoutineTimer.Get() < 2)
+			{
+				elevator.ExtendElevator();
+			}
+			else if (dropRoutineTimer.Get() >= 2 && dropRoutineTimer.Get() < 4)
+			{
+				elevator.SetLevel(elevatorLevel);
+			}
+
+			else if (dropRoutineTimer.Get() >= 4 && dropRoutineTimer.Get() < 6)
+			{
+				claws.OpenClaw();
+			}
+
+			else if (dropRoutineTimer.Get() >= 6 && dropRoutineTimer.Get() < 8)
+			{
+				elevator.RetractElevator();
+			}
+
+			else
+			{
+				claws.CloseClaw();
+				firstTime = true;
+				dropRoutineStarted = false;
+				dropRoutineFinished = true;
+			}
 			//Call drop routine
 		}
 
@@ -377,6 +412,7 @@ private:
 		{
 			goingDown = true;
 		}
+
 		if (goingDown == true && goingUp == false) //This logic here with the && needs to be checked. -Ben
 		{
 			if (activatedElevatorDown == true)
@@ -527,8 +563,9 @@ private:
 		//Spin Rollers In
 		if (stick.GetRawAxis(2) >= 0.1  && stick.GetRawAxis(3) == 0.0)
 		{
-			rolyPolySpeed = (stick.GetRawAxis(2));
-			rollers.Eat(rolyPolySpeed);
+			rolyPolySpeed = 1.0;
+			//rolyPolySpeed = (stick.GetRawAxis(2)); EDIT: seems like we need the max speed all the time
+			rollers.Barf(rolyPolySpeed);
 			rollers.CloseRollers();
 //			thing1.SetSpeed(stick.GetRawAxis(2));
 //			thing2.SetSpeed(-stick.GetRawAxis(2));
@@ -537,8 +574,9 @@ private:
 		//Spin Rollers Out
 		else if (stick.GetRawAxis(3) >= 0.1 && stick.GetRawAxis(2) == 0)
 		{
-			rolyPolySpeed = (stick.GetRawAxis(3));
-			rollers.Barf(rolyPolySpeed);
+			rolyPolySpeed = 1.0;
+			//rolyPolySpeed = (stick.GetRawAxis(3));
+			rollers.Eat(rolyPolySpeed);
 			rollers.CloseRollers();
 		}
 
@@ -831,7 +869,7 @@ private:
 		case 0:
 			if (autonTimer.Get() < 2)
 			{
-				claws.CloseClaw();
+				rollers.CloseRollers();
 				rollers.Eat(0.7);
 			}
 			else
@@ -1086,15 +1124,51 @@ private:
 		}
 	}
 
-	void AutonFive() //
+	void AutonOneContainer() //Grab 1 container and goes into auto zone
 	{
 		switch (autoLoopCounter)
 		{
 		case 0:
 			if (autonTimer.Get() < 2)
 			{
+				Auto_DriveStraightForwardDistance(6, 0.5);
+				rollers.CloseRollers();
+				rollers.Eat(1.0);
+			}
+
+			else
+			{
+				autoLoopCounter++;
+				autonTimer.Reset();
+			}
+			break;
+		case 2:
+			if (autonTimer.Get() < 2)
+			{
+				elevator.SetLevel(1);
+				rollers.OpenRollers();
+				rollers.Eat(0.0);
+			}
+			else
+			{
+				autoLoopCounter++;
+				autonTimer.Reset();
+			}
+			break;
+		case 3:
+			if (autonTimer.Get() < 2)
+			{
+				Auto_DriveStraightForwardDistance(50, 0.5);
 
 			}
+			else
+			{
+				Auto_DriveStraightForwardDistance(0, 0.0);
+				autoLoopCounter++;
+				autonTimer.Reset();
+			}
+			break;
+
 		}
 	}
 
