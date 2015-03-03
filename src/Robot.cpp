@@ -13,17 +13,17 @@
 
 typedef enum
 {
-	ELEVATOR_ENCODER_A,
-	ELEVATOR_ENCODER_B,
-	RIGHT_ENCODER_A,
-	RIGHT_ENCODER_B,
-	LEFT_ENCODER_A,
-	LEFT_ENCODER_B,
-	GYRO,
-	LOWER_LEFT_LIMIT_SWITCH,
-	LOWER_RIGHT_LIMIT_SWITCH,
-	UPPER_LEFT_LIMIT_SWITCH,
-	UPPER_RIGHT_LIMIT_SWITCH
+	ELEVATOR_ENCODER_A, //0
+	ELEVATOR_ENCODER_B, //1
+	RIGHT_ENCODER_A, //2
+	RIGHT_ENCODER_B, //3
+	LEFT_ENCODER_A, //4
+	LEFT_ENCODER_B, //5
+	GYRO, //6
+	LOWER_LEFT_LIMIT_SWITCH, //7
+	UPPER_LEFT_LIMIT_SWITCH, //8
+	UPPER_RIGHT_LIMIT_SWITCH, //9
+	LOWER_RIGHT_LIMIT_SWITCH //10
 }DIGITAL_OUTPUT_CHANNEL;
 
 typedef enum
@@ -275,6 +275,7 @@ private:
 	{
 		elevator.Execute();
 		SmartDashboard::PutBoolean("High gear ON?", shiftUpExtend.Get());
+		SmartDashboard::PutBoolean("OverRide", override);
 		SmartDashboard::PutString("Do it work?!", "Aw yeah");
 		SmartDashboard::PutNumber("Left Side Speed", joeTalon.Get());
 		SmartDashboard::PutNumber("Right Side Speed", kaylaTalon.Get());
@@ -301,6 +302,7 @@ private:
 		static bool wasButton8Pressed = false;//static means that the variable is saved even after you leave the function
 		if (stick.GetRawButton(8) == true)
 		{
+
 			if (wasButton8Pressed == false)
 			{
 				elevator.SetPID(p,i,d);
@@ -335,6 +337,17 @@ private:
 //			myRobot.Drive(.1, 0);
 //		}
 
+		//Ends the whole "Oh my gosh, we collided with the claw" problem
+		if (elevator.IsCrashing() == true)
+		{
+			rollers.OpenRollers();
+			override = true;
+		}
+		else if (elevator.IsCrashing() == false)
+		{
+			override = false;
+		}
+
 		//Open Claw
 		if (stick.GetPOV(0) == 0 && clawOpen == false && override == false)
 		{
@@ -356,7 +369,6 @@ private:
 			rollersOpen = true;
 			rollers.OpenRollers();
 			elevator.ExtendElevator();
-
 		}
 
 		//Retract Elevator
@@ -507,7 +519,7 @@ private:
 //		}
 
 		// Open Claw and rollers
-		if (stick.GetRawButton(4) == true && yReleased == true)
+		if (stick.GetRawButton(4) == true && yReleased == true && override == false)
 		{
 			override = true;
 //			if (stick.GetRawButton(5) == true && rollersOpen == false)
