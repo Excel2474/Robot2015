@@ -36,6 +36,8 @@ private:
 	// = new DigitalInput(0)
 	int destinationLevel;
 	int destinationFloor;
+	bool isCountSet;
+	bool isStopChecked;
 	//float destinationPulse;
 	PIDController elevatorPid;
 
@@ -48,6 +50,7 @@ public: //Elevator Extend
 	void Reset();
 	void BrakeOn();
 	void BrakeOff();
+	void TwitchFromDown();
 	void SetLevel(int destinationLevel);
 	bool IsAtLevel();
 	void TestElevatorMotor(float motorSpeed);

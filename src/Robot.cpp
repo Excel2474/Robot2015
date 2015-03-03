@@ -93,7 +93,7 @@ class Robot: public IterativeRobot
 	bool curvyWurvy = false;
 	bool extended = false;
 	bool clawOpen = true;
-	bool elevatorExtended;
+	bool elevatorExtended = false;
 	bool dropRoutineStarted = false;
 	bool dropRoutineFinished = true;
 	bool droveStraight = true;
@@ -148,7 +148,8 @@ public:
 		elevator(SOLENOID_ELEVATOR_EXTEND, SOLENOID_ELEVATOR_RETRACT, SOLENOID_ELEVATOR_BRAKE_EXTEND, SOLENOID_ELEVATOR_BRAKE_RETRACT, ELEVATOR_MOTOR, ELEVATOR_ENCODER_A, ELEVATOR_ENCODER_B, LOWER_LEFT_LIMIT_SWITCH, LOWER_RIGHT_LIMIT_SWITCH, UPPER_LEFT_LIMIT_SWITCH, UPPER_RIGHT_LIMIT_SWITCH),
 		compressor(5),
 		rollers(SOLENOID_ROLLERS_EXTEND, SOLENOID_ROLLERS_RETRACT, RIGHT_ROLLER_MOTOR, LEFT_ROLLER_MOTOR /* , rollerSpeed */),
-		gyro1(GYRO)
+		gyro1(GYRO),
+		selectedAutonomousRoutine(0)
 		//autoLoopCounter(0),
 		//lastCurve(0)
 	{
@@ -430,22 +431,11 @@ private:
 		if (stick.GetRawAxis(0) < -0.1 || stick.GetRawAxis(0) > 0.1)
 		{
 			elevator.DisablePid();
-			brakeTime.Start();
-			if (brakeTime.Get() < .3)
-			{
-				elevator.TestElevatorMotor(-0.5);
-				elevator.BrakeOff();
-			}
-			else if (brakeTime.Get() >= .3)
-			{
-				elevator.TestElevatorMotor(stick.GetRawAxis(0));
-			}
+			elevator.TestElevatorMotor(stick.GetRawAxis(0));
 		}
 		else
 		{
 			elevator.TestElevatorMotor(0);
-			elevator.BrakeOn();
-			brakeTime.Reset();
 		}
 
 		//TEST CODE - Toggle elevator brake
