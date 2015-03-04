@@ -52,7 +52,6 @@ public: //Elevator Extend
 	bool IsAtLevel();
 	void TestElevatorMotor(float motorSpeed);
 	void DisablePid();
-	bool IsCrashing();
 
 	void SetPID(float p, float i, float d){elevatorPid.SetPID(p,i,d);}
 };
