@@ -39,8 +39,9 @@ elevatorPid(0.1, 0000.0000, 0.0, &elevatorEncoder, &elevatorMotor) //you must us
 	//
 	SmartDashboard::init();
 	SmartDashboard::PutNumber("Current Elevator Level", destinationFloor);
-	SmartDashboard::PutNumber("Current Encoder Position", 0);
+
 	SmartDashboard::PutNumber("Distance Per Pulse", DISTANCE_PER_PULSE);
+
 	elevatorPid.SetOutputRange(-0.2, 0.2);
 	elevatorPid.SetAbsoluteTolerance(0.25);
 
@@ -82,14 +83,14 @@ void Elevator::RetractElevator()
 void Elevator::Execute()
 {
 	Timer elevatorRest;
-	SmartDashboard::PutNumber("Current Encoder Position", elevatorEncoder.GetDistance());
-#ifndef LIMIT_SWITCHES_ARE_MISSING
-	if (leftLowerLimit.Get() == true || rightLowerLimit.Get() == true)
-	{
-		elevatorEncoder.Reset();
-		elevatorPid.Reset();
-	}
-#endif
+	//SmartDashboard::PutNumber("Current Encoder Position", elevatorEncoder.GetDistance());
+//#ifndef LIMIT_SWITCHES_ARE_MISSING
+//	if (leftLowerLimit.Get() == true || rightLowerLimit.Get() == true)
+//	{
+//		elevatorEncoder.Reset();
+//		elevatorPid.Reset();
+//	}
+//#endif
 	elevatorRest.Start();
 	if (IsAtLevel() == true)
 	{
@@ -248,29 +249,62 @@ bool Elevator::IsAtLevel()
 
 void Elevator::TestElevatorMotor(float motorSpeed)
 {
+	SmartDashboard::PutNumber("Current Encoder Position", elevatorEncoder.Get());
+	SmartDashboard::PutBoolean("Is it Clicking?", leftUpperLimit.Get());
 	//logic to measure: "if it's at the top, it won't run up" and "if it's at the bottom, it won't run down"
 	//I don't know how the motor is oriented, so the stick axis/motor direction correspondence may be wrong
+<<<<<<< HEAD
 	if (motorSpeed < -0.02)
 	{
 		if ( /* elevatorEncoder.Get() == 0 || */ leftLowerLimit.Get() == false /* || rightLowerLimit.Get() == true */)
+=======
+	float aCertainFloat;
+	if (motorSpeed > 0.02)
+	{
+		if (leftUpperLimit.Get() == false || rightUpperLimit.Get() == false)
+>>>>>>> c961e4110d471c78682c1edc737ee612ede13778
 		{
 			elevatorMotor.SetSpeed(0);
 		}
 		else
 		{
+<<<<<<< HEAD
 			elevatorMotor.SetSpeed(motorSpeed * 0.6); //Buffer, just in case
+=======
+			if (elevatorEncoder.Get() > aCertainFloat)
+			{
+				elevatorMotor.SetSpeed(-motorSpeed * 0.6); //Buffer, just in case
+				aCertainFloat = 0;
+			}
+			else
+			{
+				elevatorMotor.SetSpeed(motorSpeed);
+				BrakeOff();
+			}
+>>>>>>> c961e4110d471c78682c1edc737ee612ede13778
 		}
 	}
-	else if (motorSpeed > 0.02)
+	else if (motorSpeed < -0.02)
 	{
+<<<<<<< HEAD
 //		if (elevatorEncoder.Get() == 1500 || leftUpperLimit.Get() == true || rightUpperLimit.Get() == true ) //We should define a constant for the maximum possible count the encoder can have. For now, I'm using the count value for Level Six
 //		{
 //			elevatorMotor.SetSpeed(0);
 //		}
 //		else
 //		{
+=======
+		elevatorEncoder.Get();
+		//if (elevatorEncoder.Get() == 1500 || leftUpperLimit.Get() == true || rightUpperLimit.Get() == true ) //We should define a constant for the maximum possible count the encoder can have. For now, I'm using the count value for Level Six
+		if (leftUpperLimit.Get() == false || rightUpperLimit.Get() == false)
+		{
+			elevatorMotor.SetSpeed(0);
+		}
+		else
+		{
+>>>>>>> c961e4110d471c78682c1edc737ee612ede13778
 			elevatorMotor.SetSpeed(motorSpeed * 0.6); //Buffer, just in case
-//		}
+		}
 	}
 	else
 	{
@@ -281,6 +315,18 @@ void Elevator::TestElevatorMotor(float motorSpeed)
 void Elevator::DisablePid()
 {
 	elevatorPid.Disable();
+}
+
+bool Elevator::IsCrashing()
+{
+	if (elevatorEncoder.Get() < 100 || elevatorExtend.Get() == true)
+	{
+		return true;
+	}
+	else if (elevatorEncoder.Get() >= 100 && elevatorExtend.Get() == false)
+	{
+		return false;
+	}
 }
 
 /*
