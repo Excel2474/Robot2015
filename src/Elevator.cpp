@@ -249,7 +249,7 @@ bool Elevator::IsAtLevel()
 
 void Elevator::TestElevatorMotor(float motorSpeed)
 {
-	SmartDashboard::PutNumber("Current Encoder Position", elevatorEncoder.Get());
+	SmartDashboard::PutNumber("Current Encoder Position", elevatorEncoder.GetDistance());
 	SmartDashboard::PutBoolean("Is it Clicking?", leftUpperLimit.Get());
 	//logic to measure: "if it's at the top, it won't run up" and "if it's at the bottom, it won't run down"
 	//I don't know how the motor is oriented, so the stick axis/motor direction correspondence may be wrong
