@@ -1,0 +1,17 @@
+(Accurate to the Google Sheets file as of: 3/4/15)
+
+PWM channel		Motor Controller #		Motor
+0...............None....................None
+1...............1.......................Left Collector
+2...............2,3 (split).............Left Drivetrain
+3...............4,0 (split).............Elevator
+4...............5.......................Right Collector
+5...............6,7 (split).............Right Drivetrain
+
+
+PCM port - EXTEND		Piston			PCM port - RETRACT
+		0...............Drivetrains.............1
+		2...............Elevator slide..........3
+		4...............Collector...............5
+		6...............Brake...................7
+		0B..............Claw...................1B

@@ -29,6 +29,8 @@ leftUpperLimit(upper_left_limit),
 rightUpperLimit(upper_right_limit),
 destinationLevel(LEVEL_ONE),
 destinationFloor(1),
+isCountSet(false),
+isStopChecked(false),
 elevatorPid(0.1, 0000.0000, 0.0, &elevatorEncoder, &elevatorMotor) //you must use a split pwm to drive both victors from one pwm output; then you just have an elevatorMotor victor declaration, which drives two motors
 {
 	elevatorEncoder.SetDistancePerPulse(DISTANCE_PER_PULSE);
@@ -136,6 +138,28 @@ void Elevator::BrakeOff()
 //	}
 }
 
+void Elevator::TwitchFromDown()	//When we stop LOWERING the elevator, it raises the elevator slightly before putting the brake on
+{
+	static float encoderObjectiveCount_TfD;	//Does it need to be static?
+	if (isStopChecked == false)
+	{
+		encoderObjectiveCount_TfD = elevatorEncoder.Get();	//Is this right, or do we need to add some number of counts?
+		isStopChecked = true;
+	}
+
+	if (isStopChecked == true && (elevatorEncoder.Get() < encoderObjectiveCount_TfD))
+	{
+		elevatorMotor.SetSpeed(0.4);	//TODO: probably need to calibrate this speed
+		BrakeOn();
+	}
+	else if (elevatorEncoder.Get() >= encoderObjectiveCount_TfD)
+	{
+		elevatorMotor.SetSpeed(0);
+		isStopChecked = false;	//Is this the right place to put this line? -Ben
+		return;					//Is this necessary?
+	}
+}
+
 void Elevator::SetLevel(int destinationLevel)
 {
 	if (destinationLevel >= 0 && destinationLevel <= 6) // Makes sure level exists -- because reasons
@@ -193,6 +217,7 @@ void Elevator::SetLevel(int destinationLevel)
 	{
 		elevatorMotor.SetSpeed(0);	//Do we need this? It would be useful, wouldn't it?  NO!!!
 	}
+	SmartDashboard::PutNumber("Current Encoder Position", elevatorEncoder.GetDistance());
 }
 //	else
 //	{
@@ -249,35 +274,56 @@ bool Elevator::IsAtLevel()
 
 void Elevator::TestElevatorMotor(float motorSpeed)
 {
+	static float elevatorEncoderObjectiveCount;
+	static float lastSpeed = motorSpeed;
 	SmartDashboard::PutNumber("Current Encoder Position", elevatorEncoder.GetDistance());
 	SmartDashboard::PutBoolean("Is it Clicking?", leftUpperLimit.Get());
 	//logic to measure: "if it's at the top, it won't run up" and "if it's at the bottom, it won't run down"
 	//I don't know how the motor is oriented, so the stick axis/motor direction correspondence may be wrong
-	float aCertainFloat;
+//	float aCertainFloat;
 	if (motorSpeed > 0.02)
 	{
-		if (leftUpperLimit.Get() == false || rightUpperLimit.Get() == false)
-		{
-			elevatorMotor.SetSpeed(0);
-		}
-		else
-		{
-			if (elevatorEncoder.Get() > aCertainFloat)
-			{
-				elevatorMotor.SetSpeed(-motorSpeed * 0.6); //Buffer, just in case
-				aCertainFloat = 0;
-			}
-			else
-			{
-				elevatorMotor.SetSpeed(motorSpeed);
-				BrakeOff();
-			}
-		}
+//		if (leftUpperLimit.Get() == false || rightUpperLimit.Get() == false)
+//		{
+//			elevatorMotor.SetSpeed(0);
+//		}
+//		else
+//		{
+//			if (elevatorEncoder.Get() > aCertainFloat)
+//			{
+//				elevatorMotor.SetSpeed(-motorSpeed * 0.6); //Buffer, just in case
+//				aCertainFloat = 0;
+//			}
+//			else
+//			{
+//				elevatorMotor.SetSpeed(motorSpeed);
+//				BrakeOff();
+//			}
+//		}
+//		if (/* elevatorEncoder.Get() != 0 && (leftLowerLimit.Get() == false || rightLowerLimit.Get() == false) */)
+//				{
+					if (isCountSet == false)
+					{
+						elevatorEncoderObjectiveCount = (elevatorEncoder.Get() + 5); //How many counts higher than the starting level we want the elevator to go to first
+						isCountSet = true;
+					}
+
+					if (elevatorEncoder.Get() < elevatorEncoderObjectiveCount)
+					{
+						elevatorMotor.SetSpeed(0.9);
+						BrakeOff();
+					}
+					else if (elevatorEncoder.Get() >= elevatorEncoderObjectiveCount)
+					{
+						elevatorMotor.SetSpeed(motorSpeed * 0.5);	//TODO: Make this buffer adjustable through SmartDashboard -Ben
+						elevatorEncoderObjectiveCount = 0;
+					}
+		//		}
 	}
 	else if (motorSpeed < -0.02)
 	{
-		elevatorEncoder.Get();
-		//if (elevatorEncoder.Get() == 1500 || leftUpperLimit.Get() == true || rightUpperLimit.Get() == true ) //We should define a constant for the maximum possible count the encoder can have. For now, I'm using the count value for Level Six
+//		elevatorEncoder.Get();
+//		//if (elevatorEncoder.Get() == 1500 || leftUpperLimit.Get() == true || rightUpperLimit.Get() == true ) //We should define a constant for the maximum possible count the encoder can have. For now, I'm using the count value for Level Six
 		if (leftUpperLimit.Get() == false || rightUpperLimit.Get() == false)
 		{
 			elevatorMotor.SetSpeed(0);
@@ -287,14 +333,50 @@ void Elevator::TestElevatorMotor(float motorSpeed)
 			elevatorMotor.SetSpeed(motorSpeed * 0.6); //Buffer, just in case
 		}
 	}
-	else
+	else if (motorSpeed == 0.0 && elevatorMotor.Get() != 0.0)
 	{
-		elevatorPid.SetSetpoint(elevatorEncoder.Get());
 		elevatorMotor.SetSpeed(0);
-		aCertainFloat = (elevatorEncoder.Get() + 5);
-		BrakeOn();
+		if (lastSpeed > 0)
+		{
+			elevatorMotor.SetSpeed(0);
+		}
+		else if (lastSpeed < 0)
+		{
+			TwitchFromDown();
+		}
+
+//		if (isStopChecked == false)
+//		{
+//			elevatorEncoderObjectiveCount = elevatorEncoder.Get();
+//			isStopChecked = true;
+//		}
+//
+//		if (isStopChecked == true && (elevatorEncoder.Get() < elevatorEncoderObjectiveCount))
+//		{
+//			elevatorMotor.SetSpeed(0.9);
+//			BrakeOn();
+//		}
+//		else
+//		{
+//			elevatorMotor.SetSpeed(0.0);
+//		}
 	}
+
+	else if (motorSpeed == 0.0 && elevatorMotor.Get() == 0.0)	//IS THIS NECESSARY? And should these "re-falsifications"
+	{
+		isCountSet = false;
+		isStopChecked = false;
+	}
+
 }
+//	else
+//	{
+//		elevatorPid.SetSetpoint(elevatorEncoder.Get());
+//		elevatorMotor.SetSpeed(0);
+//		aCertainFloat = (elevatorEncoder.Get() + 5);
+//		BrakeOn();
+//	}
+
 
 void Elevator::DisablePid()
 {

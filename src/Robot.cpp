@@ -451,50 +451,54 @@ private:
 		if (stick.GetRawButton(2) == true && elevatorLevel != 6)
 		{
 			goingUp = true;
+
+				elevator.SetLevel(3);
 		}
-		if (goingUp == true && goingDown == false) //This logic right here with the && needs to be checked. -Ben
-		{
-			if (activatedElevatorUp == true)
-			{
-				elevator.BrakeOff();
-	//			brakeTime.Reset();
-	//			brakeTime.Start();
-	//			if (brakeTime.Get() > 0.1)
-	//			{
-				elevatorLevel = elevatorLevel + 1;
-				elevator.SetLevel(elevatorLevel);
-				//^Call RAISE elevator function
-				activatedElevatorUp = false;
-			}
-			if (elevator.IsAtLevel() == true)
-			{
-				elevator.BrakeOn();
-				goingUp = false;
-				activatedElevatorUp = true;
-			}
-		}
+//		if (goingUp == true && goingDown == false) //This logic right here with the && needs to be checked. -Ben
+//		{
+//			if (activatedElevatorUp == true)
+//			{
+//				elevator.BrakeOff();
+//	//			brakeTime.Reset();
+//	//			brakeTime.Start();
+//	//			if (brakeTime.Get() > 0.1)
+//	//			{
+//				elevatorLevel = elevatorLevel + 1;
+//				elevator.SetLevel(elevatorLevel);
+//				//^Call RAISE elevator function
+//				activatedElevatorUp = false;
+//			}
+//			if (elevator.IsAtLevel() == true)
+//			{
+//				elevator.BrakeOn();
+//				goingUp = false;
+//				activatedElevatorUp = true;
+//			}
+//		}
+
 
 		//TEST CODE - Control elevator motor speed
-		if (stick.GetRawAxis(0) < -0.1 || stick.GetRawAxis(0) > 0.1)
-		{
-			elevator.DisablePid();
-			brakeTime.Start();
-			if (brakeTime.Get() < .3)
-			{
-				elevator.TestElevatorMotor(-0.5);
-				elevator.BrakeOff();
-			}
-			else if (brakeTime.Get() >= .3)
-			{
-				elevator.TestElevatorMotor(stick.GetRawAxis(0));
-			}
-		}
-		else
-		{
-			elevator.TestElevatorMotor(0);
-			elevator.BrakeOn();
-			brakeTime.Reset();
-		}
+//		if (stick.GetRawAxis(0) < -0.1 || stick.GetRawAxis(0) > 0.1)
+//		{
+//			elevator.DisablePid();
+////			brakeTime.Start();
+////			if (brakeTime.Get() < .3)
+////			{
+////				elevator.TestElevatorMotor(-0.5);
+////				elevator.BrakeOff();
+////			}
+////			else if (brakeTime.Get() >= .3)
+////			{
+////				elevator.TestElevatorMotor(stick.GetRawAxis(0));
+////			}
+//			elevator.TestElevatorMotor(stick.GetRawAxis(0));
+//		}
+//		else
+//		{
+//			elevator.TestElevatorMotor(0);
+////			elevator.BrakeOn();
+////			brakeTime.Reset();
+//		}
 
 		//TEST CODE - Toggle elevator brake
 //		static bool wasButton7Pressed = false;
