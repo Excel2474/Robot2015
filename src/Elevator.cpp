@@ -40,8 +40,8 @@ elevatorPid(0.1, 0000.0000, 0.0, &elevatorEncoder, &elevatorMotor) //you must us
 // pd = 1.751, ratio = 1:2, 2(pi)1.751
 	//
 	SmartDashboard::init();
-	SmartDashboard::PutNumber("Current Elevator Level", destinationFloor);
-
+	//SmartDashboard::PutNumber("Current Val", elevatorEncoder.GetDistance());
+//	SmartDashboard::PutNumber("Current Encoder Pos", elevatorEncoder.Get());
 	SmartDashboard::PutNumber("Distance Per Pulse", DISTANCE_PER_PULSE);
 
 	elevatorPid.SetOutputRange(-0.2, 0.2);
@@ -54,6 +54,12 @@ void Elevator::ExtendElevator()
 	elevatorExtend.Set(true);
 	elevatorRetract.Set(false);
 
+}
+
+
+void Elevator::stopPID()
+{
+elevatorMotor.SetSpeed(0);
 }
 
 void Elevator::RetractElevator()
@@ -85,6 +91,10 @@ void Elevator::RetractElevator()
 void Elevator::Execute()
 {
 	Timer elevatorRest;
+	SmartDashboard::PutNumber("Current Encoder Pos", elevatorEncoder.Get());
+	SmartDashboard::PutBoolean("BLS", BottomlimitHit());
+	SmartDashboard::PutBoolean("TLS", ToplimitHit());
+
 	//SmartDashboard::PutNumber("Current Encoder Position", elevatorEncoder.GetDistance());
 //#ifndef LIMIT_SWITCHES_ARE_MISSING
 //	if (leftLowerLimit.Get() == true || rightLowerLimit.Get() == true)
@@ -102,11 +112,17 @@ void Elevator::Execute()
 		BrakeOn();
 		}
 	}
+
+	/*if (AtSetPoint() == true)
+	{
+		customPID.Disable();
+	}*/
 	//This will have to keep track while the elevator is reseting watching for the limit switch, once it hits the switch then reset the encoder and pid, then set the pid setpoint to 0 and enable it
 }
 
 void Elevator::Reset()
 {
+
 
 //Send the motor down slow-ishly use execute function to check for hitting the lower limit switch
 //This would need to be called before your first go to command, so you should keep track of whether or not it has been initialized with a boolean, and in the set routine call reset if it hasn't been done
@@ -160,9 +176,10 @@ void Elevator::TwitchFromDown()	//When we stop LOWERING the elevator, it raises 
 	}
 }
 
+
 void Elevator::SetLevel(int destinationLevel)
 {
-	if (destinationLevel >= 0 && destinationLevel <= 6) // Makes sure level exists -- because reasons
+	if (destinationLevel >= 0 && destinationLevel <= 7) // Makes sure level exists -- because reasons
 	{
 		elevatorPid.Enable();
 		switch (destinationLevel)
@@ -211,13 +228,14 @@ void Elevator::SetLevel(int destinationLevel)
 				elevatorMotor.SetSpeed(0);	//Do we need this? It would be useful, wouldn't it?  NO!!!
 			}
 			break;
+
 		}
 	}
 	else
 	{
 		elevatorMotor.SetSpeed(0);	//Do we need this? It would be useful, wouldn't it?  NO!!!
 	}
-	SmartDashboard::PutNumber("Current Encoder Position", elevatorEncoder.GetDistance());
+
 }
 //	else
 //	{
@@ -398,6 +416,284 @@ bool Elevator::IsCrashing()
 		return false;
 	}
 }
+
+
+double Elevator::PID(double max_out, double min_out, double m_setpoint) //currently just PD control. Add I
+{
+//Timer t1;
+double kp=6;
+double kd=3;
+double ki=0.0;
+double norm = 893.0;
+double test = 10.0;
+//t1.Stop();
+//t1.Start();
+
+//if(m_setpoint>= elevatorEncoder.Get())
+//{
+//	error=m_setpoint-elevatorEncoder.Get();
+//
+//}
+//else if(m_setpoint < elevatorEncoder.Get())
+//{
+//	error=elevatorEncoder.Get()-m_setpoint;
+//}
+
+p_error=m_setpoint-elevatorEncoder.Get();
+SmartDashboard::PutNumber("Error", p_error);
+SmartDashboard::PutNumber("setpoint", elevatorEncoder.GetDistance());
+
+p_error=(p_error/norm); //normalize the error (0-100 from bottom to top)
+d_error=p_error-error_prev;
+i_error=i_error+p_error;
+//PID_out= kp*error+kd*error_deriv;
+PID_out= kp*p_error+kd*d_error+ki*i_error;
+if(PID_out > max_out)
+{
+	PID_out= max_out;
+}
+else if (PID_out< min_out)
+{
+	PID_out = min_out;
+}
+
+
+//if (ToplimitHit() == true && PID_out>0.0)
+//{
+//	PID_out = 0;
+//}
+//
+//else if (BottomlimitHit() == true && PID_out<0.0)
+//{
+//	PID_out = 0;
+//}
+//
+
+SmartDashboard::PutNumber("PID", PID_out);
+//elevatorMotor.SetSpeed(PID_out);
+return PID_out;
+error_prev=p_error;
+//t0=t1.Get();
+
+//dt=(t1.Get()-t0);
+//error_deriv = d_error/dt;
+}
+
+
+bool Elevator::AtPosition(int setpoint)
+{
+	int tol=5; //number of encoder counts for tolerance
+	double setpoint_val;
+	//setpoint_val=LEVEL_ZERO;
+	switch (setpoint)
+	{
+	case 0:
+		setpoint_val=LEVEL_ZERO;
+		break;
+	case 1:
+		setpoint_val=LEVEL_ONE;
+		break;
+	case 2:
+		setpoint_val=LEVEL_TWO;
+		break;
+	case 3:
+		setpoint_val=LEVEL_THREE;
+		break;
+	case 4:
+		setpoint_val=LEVEL_FOUR;
+		break;
+	case 5:
+		setpoint_val=LEVEL_FIVE;
+		break;
+	case 6:
+		setpoint_val=LEVEL_SIX;
+		break;
+	case 7:
+		setpoint_val=LEVEL_SEVEN;
+		break;
+	}
+
+	if(abs((setpoint_val-elevatorEncoder.Get())) <= tol) //See if ABS function is available
+	{
+		//return true;
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+
+}
+
+bool Elevator::ToplimitHit() //Returns sign of the error
+{
+	if(rightUpperLimit.Get() == true || leftUpperLimit.Get())
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+bool Elevator::BottomlimitHit() //Returns sign of the error
+{
+	if(leftLowerLimit.Get() == true)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+bool Elevator::setPID(double max_out, double min_out, double setpoint)
+{
+	double setPointVal;
+
+	if(AtPosition(setpoint) == true)
+	{
+		elevatorMotor.SetSpeed(0); //Disable
+		ResetPID(); // Reset all initial values once PID reaches setpoint
+		return true; // Return false to disable PID at setpoint.
+	}
+	else
+	{
+		setPointVal=SetHeight(setpoint); //Set point value in encoder counts
+		elevatormotorspeed = PID(max_out, min_out, setPointVal); //Run the PID
+
+		if(elevatormotorspeed > 0.0 && ToplimitHit() == true)
+		{
+			elevatorMotor.SetSpeed(0); //Disable
+			ResetPID(); // Reset all initial values once PID reaches setpoint
+			return false;
+		}
+		else if( setPointVal == 0 && BottomlimitHit() == true)
+		{
+			elevatorMotor.SetSpeed(0); //Disable
+			ResetPID(); // Reset all initial values once PID reaches setpoint
+			return false;
+		}
+		else
+		{
+			elevatorMotor.SetSpeed(elevatormotorspeed); //Disable
+		}
+		SmartDashboard::PutNumber("Elevator Motor Power", elevatormotorspeed);
+		return true;
+	}
+
+}
+
+void Elevator::ResetPID()
+{
+	p_error=0.0;
+//	d_error=0.0;
+	error_prev=0.0;
+	i_error = 0.0;
+//	t0 = 0.0;
+//	dt = 0.0;
+//	error_deriv=0;
+	PID_out=0.0;
+}
+
+float Elevator::SetHeight(int destinationLevel)
+{
+	if (destinationLevel >= minLevel() && destinationLevel <= maxLevel()) // Makes sure level exists -- because reasons
+	{
+		switch (destinationLevel)
+		{
+		case 0:
+
+			//customPID(error, d_error, error_prev, t0, dt, error_deriv, PID_out, LEVEL_ZERO);
+			return LEVEL_ZERO;
+			destinationFloor = 0;
+
+			break;
+
+		case 1:
+			//elevatorPid.SetSetpoint(LEVEL_ONE); //This is a dummy value right now. We will need to determine the values for these constants
+			//customPID(error, d_error, error_prev, t0, dt, error_deriv, PID_out, LEVEL_ONE);
+			return LEVEL_ONE;
+			destinationFloor = 1;
+			break;
+		case 2:
+		//	elevatorPid.SetSetpoint(LEVEL_TWO); //This is a dummy value right now. We will need to determine the values for these constants
+			//customPID(error, d_error, error_prev, t0, dt, error_deriv, PID_out, LEVEL_TWO);
+			return LEVEL_TWO;
+			destinationFloor = 2;
+			break;
+		case 3:
+
+			//customPID(error, d_error, error_prev, t0, dt, error_deriv, PID_out, LEVEL_THREE);
+			return LEVEL_THREE;
+			destinationFloor = 3;
+
+			break;
+		case 4:
+
+			//customPID(error, d_error, error_prev, t0, dt, error_deriv, PID_out, LEVEL_THREE);
+			return LEVEL_FOUR;
+			destinationFloor = 4;
+
+			break;
+		case 5:
+
+			//customPID(error, d_error, error_prev, t0, dt, error_deriv, PID_out, LEVEL_THREE);
+			return LEVEL_FIVE;
+			destinationFloor = 5;
+
+			break;
+		case 6:
+
+			//customPID(error, d_error, error_prev, t0, dt, error_deriv, PID_out, LEVEL_THREE);
+			return LEVEL_SIX;
+			destinationFloor = 6;
+
+			break;
+		case 7:
+
+			//customPID(error, d_error, error_prev, t0, dt, error_deriv, PID_out, LEVEL_THREE);
+			return LEVEL_SEVEN;
+			destinationFloor = 7; // Don't need these
+
+			break;
+		}
+	}
+	else
+	{
+		//elevatorMotor.SetSpeed(0);	//Do we need this? It would be useful, wouldn't it?  NO!!!
+	}
+
+}
+
+bool Elevator::Calibrate()
+{
+
+	if (BottomlimitHit()==true)
+	{
+		elevatorMotor.SetSpeed(0);
+		elevatorEncoder.Reset();
+		return true;
+	}
+	else
+	{
+		elevatorMotor.SetSpeed(-.3);
+		return false;
+	}
+}
+
+int Elevator::maxLevel()
+{
+	return MAX_LEVEL;
+}
+
+int Elevator::minLevel()
+{
+	return MIN_LEVEL;
+}
+
 
 /*
  * You'll also want a get desired level function and a is at desired level function
